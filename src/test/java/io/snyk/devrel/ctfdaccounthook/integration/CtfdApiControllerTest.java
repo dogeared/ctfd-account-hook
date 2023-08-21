@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(classes = CtfdAccountHookApplication.class)
-@TestPropertySource(properties = {"api.auth.header-name=X-TEST-HEADER","api.auth.token=blerg"})
+@TestPropertySource(properties = {"api.auth.header-name=X-TEST-HEADER", "api.auth.token=blerg", "alias.retries=1"})
 public class CtfdApiControllerTest {
 
     @InjectMocks
@@ -127,7 +127,7 @@ public class CtfdApiControllerTest {
         String errorString = """
         {"errors": {
             "name": [
-                "name already exists"
+                "Attempted to find a unique alias 2 times and failed."
             ]
         }}
         """;
@@ -149,4 +149,43 @@ public class CtfdApiControllerTest {
         assertThat(actual.getErrors().getName()).isEqualTo(expected.getErrors().getName());
     }
 
+    @Test
+    public void whenCreateUserRequest_thenFail_ThenSucceed_Name() throws Exception {
+        String alias = "abc-def-ghi";
+        when(aliasService.getAlias()).thenReturn(alias);
+
+        CtfdCreateUserRequest reqUser = new CtfdCreateUserRequest();
+        reqUser.setEmail("blarg@example.com");
+
+        String errorString = """
+        {
+            "errors": {
+                "name": [
+                    "User name has already been taken"
+                ]
+            }
+        }
+        """;
+
+        CtfdApiErrorResponse expectedFirst = mapper.readValue(errorString, CtfdApiErrorResponse.class);
+        CtfdApiException exception = new CtfdApiException(expectedFirst);
+
+        CtfdCreateUserResponse expectedSecond = new CtfdCreateUserResponse();
+        expectedSecond.setSuccess("success");
+
+        when(ctfdApiService.createUser(reqUser.getEmail(), alias))
+            .thenThrow(exception)
+            .thenReturn(expectedSecond);
+
+        MockHttpServletResponse response = mvc.perform(
+            post(CTFD_USERS_ENDPOINT)
+                .header("X-TEST-HEADER", "blerg")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(reqUser))
+            )
+            .andExpect(status().isOk()).andReturn().getResponse();
+
+        CtfdCreateUserResponse actual = mapper.readValue(response.getContentAsString(), CtfdCreateUserResponse.class);
+        assertThat(actual.getSuccess()).isEqualTo(expectedSecond.getSuccess());
+    }
 }

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 public class CtfdApiErrorResponse implements CtfdResponse {
-    private Errors errors;
+    private Errors errors = new Errors();
 
     public Errors getErrors() {
         return errors;

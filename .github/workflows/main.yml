@@ -18,6 +18,7 @@ jobs:
         run: mvn --batch-mode --update-snapshots package
 
       - name: Generate JaCoCo Badge
+        id: jacoco
         uses: cicirello/jacoco-badge-generator@v2
         with:
           generate-branches-badge: true

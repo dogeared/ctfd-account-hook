@@ -1,6 +1,7 @@
 name: Java CI
 
-on: [push]
+on:
+  pull_request:
 
 jobs:
   build:
@@ -26,3 +27,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 33
           min-coverage-changed-files: 60
+
+      - name: Generate JaCoCo Badge
+        uses: cicirello/jacoco-badge-generator@v2
+        with:
+          generate-branches-badge: true

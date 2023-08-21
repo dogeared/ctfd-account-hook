@@ -1,6 +1,6 @@
 package io.snyk.devrel.ctfdaccounthook.model;
 
-public class CreateCtfdUserRequest {
+public class CtfdCreateUserRequest {
 
     private String email;
 

@@ -79,22 +79,22 @@
                         <configuration>
                             <rules>
                                 <rule>
-                                    <element>PACKAGE</element>
+                                    <element>BUNDLE</element>
                                     <limits>
                                         <limit>
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.40</minimum>
+                                            <minimum>0.85</minimum>
                                         </limit>
                                         <limit>
                                             <counter>METHOD</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.50</minimum>
+                                            <minimum>0.85</minimum>
                                         </limit>
                                         <limit>
                                             <counter>CLASS</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.90</minimum>
+                                            <minimum>0.85</minimum>
                                         </limit>
                                     </limits>
                                 </rule>

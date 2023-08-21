@@ -1,7 +1,7 @@
 package io.snyk.devrel.ctfdaccounthook.controller;
 
 import io.snyk.devrel.ctfdaccounthook.Exception.CtfdApiException;
-import io.snyk.devrel.ctfdaccounthook.model.CreateCtfdUserRequest;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserRequest;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdResponse;
 import io.snyk.devrel.ctfdaccounthook.service.AliasService;
 import io.snyk.devrel.ctfdaccounthook.service.CtfdApiService;
@@ -26,18 +26,18 @@ public class CtfdApiController {
 
     }
 
-    @GetMapping("/api/v1/challenges")
-    public Mono<Map> getChallenges() {
-        return ctfdApiService.getChallenges();
-    }
-
-    @GetMapping("/api/v1/users")
-    public Mono<Map> getUsers() {
-        return ctfdApiService.getUsers();
-    }
+//    @GetMapping("/api/v1/challenges")
+//    public Mono<Map> getChallenges() {
+//        return ctfdApiService.getChallenges();
+//    }
+//
+//    @GetMapping("/api/v1/users")
+//    public Mono<Map> getUsers() {
+//        return ctfdApiService.getUsers();
+//    }
 
     @PostMapping("/api/v1/users")
-    public CtfdResponse createUser(@RequestBody CreateCtfdUserRequest req, HttpServletResponse res) {
+    public CtfdResponse createUser(@RequestBody CtfdCreateUserRequest req, HttpServletResponse res) {
         String alias = aliasService.getAlias();
         try {
             return ctfdApiService.createUser(req.getEmail(), alias);

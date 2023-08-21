@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(classes = CtfdAccountHookApplication.class)
-@TestPropertySource(properties = {"api.auth.header-name=X-TEST-HEADER","api.auth.token=blerg"})
+@TestPropertySource(properties = {"api.auth.header-name=X-TEST-HEADER","api.auth.token=blerg", "alias.retries=1"})
 public class SecurityFilterChainIntegrationTest {
 
     private static final String HELLO_ENDPOINT = "/hello-world";

@@ -1,5 +1,6 @@
-package io.snyk.devrel.ctfdaccounthook;
+package io.snyk.devrel.ctfdaccounthook.integration;
 
+import io.snyk.devrel.ctfdaccounthook.CtfdAccountHookApplication;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {"api.auth.header-name=X-TEST-HEADER","api.auth.token=blerg"})
 public class SecurityFilterChainIntegrationTest {
 
+    private static final String HELLO_ENDPOINT = "/hello-world";
+
     @Autowired
     private WebApplicationContext context;
 
@@ -31,13 +34,13 @@ public class SecurityFilterChainIntegrationTest {
 
     @Test
     public void whenAnonymousAnyEndpoint_thenIsUnauthorized() throws Exception {
-        mvc.perform(get("/test"))
+        mvc.perform(get(HELLO_ENDPOINT))
             .andExpect(status().isUnauthorized());
     }
 
     @Test
     public void whenValidApiKeyAnyEndpoint_thenAuthorized() throws Exception {
-        mvc.perform(get("/test").header("X-TEST-HEADER", "blerg"))
+        mvc.perform(get(HELLO_ENDPOINT).header("X-TEST-HEADER", "blerg"))
             .andExpect(status().isOk());
     }
 }

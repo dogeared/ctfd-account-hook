@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class ApiKeyAuthenticationServiceImpl implements ApiKeyAuthenticationService {
 
-
     @Value("#{ @environment['api.auth.header-name'] }")
     private String apiAuthHeaderName;
 

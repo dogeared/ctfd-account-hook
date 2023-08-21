@@ -1,7 +1,7 @@
 package io.snyk.devrel.ctfdaccounthook.service;
 
 import io.snyk.devrel.ctfdaccounthook.Exception.CtfdApiException;
-import io.snyk.devrel.ctfdaccounthook.model.CtfdApiError;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdApiErrorResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdUser;
 import jakarta.annotation.PostConstruct;
@@ -64,7 +64,7 @@ public class CtfdApiServiceImpl implements CtfdApiService {
         if (res.statusCode().is2xxSuccessful()) {
             return res.bodyToMono(CtfdCreateUserResponse.class).block();
         }
-        CtfdApiError error = res.bodyToMono(CtfdApiError.class).block();
+        CtfdApiErrorResponse error = res.bodyToMono(CtfdApiErrorResponse.class).block();
         throw new CtfdApiException(error);
     }
 }

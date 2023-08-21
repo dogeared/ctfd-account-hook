@@ -1,16 +1,16 @@
 package io.snyk.devrel.ctfdaccounthook.Exception;
 
-import io.snyk.devrel.ctfdaccounthook.model.CtfdApiError;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdApiErrorResponse;
 
 public class CtfdApiException extends RuntimeException {
 
-    private CtfdApiError ctfdApiError;
-    public CtfdApiException(CtfdApiError ctfdApiError) {
+    private CtfdApiErrorResponse ctfdApiErrorResponse;
+    public CtfdApiException(CtfdApiErrorResponse ctfdApiErrorResponse) {
         super();
-        this.ctfdApiError = ctfdApiError;
+        this.ctfdApiErrorResponse = ctfdApiErrorResponse;
     }
 
-    public CtfdApiError getCtfdApiError() {
-        return ctfdApiError;
+    public CtfdApiErrorResponse getCtfdApiError() {
+        return ctfdApiErrorResponse;
     }
 }

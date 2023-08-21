@@ -3,7 +3,7 @@ package io.snyk.devrel.ctfdaccounthook.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-public class CtfdApiError {
+public class CtfdApiErrorResponse implements CtfdResponse {
     private Errors errors;
 
     public Errors getErrors() {

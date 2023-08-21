@@ -2,7 +2,7 @@ package io.snyk.devrel.ctfdaccounthook.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class CtfdCreateUserResponse {
+public class CtfdCreateUserResponse implements CtfdResponse {
 
     @JsonProperty("data")
     private CtfdUser user;

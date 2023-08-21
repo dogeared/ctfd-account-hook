@@ -2,6 +2,7 @@ package io.snyk.devrel.ctfdaccounthook.controller;
 
 import io.snyk.devrel.ctfdaccounthook.Exception.CtfdApiException;
 import io.snyk.devrel.ctfdaccounthook.model.CreateCtfdUserRequest;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdResponse;
 import io.snyk.devrel.ctfdaccounthook.service.AliasService;
 import io.snyk.devrel.ctfdaccounthook.service.CtfdApiService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -36,7 +37,7 @@ public class CtfdApiController {
     }
 
     @PostMapping("/api/v1/users")
-    public Object createUser(@RequestBody CreateCtfdUserRequest req, HttpServletResponse res) {
+    public CtfdResponse createUser(@RequestBody CreateCtfdUserRequest req, HttpServletResponse res) {
         String alias = aliasService.getAlias();
         try {
             return ctfdApiService.createUser(req.getEmail(), alias);

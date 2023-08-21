@@ -1,7 +1,7 @@
 package io.snyk.devrel.ctfdaccounthook.unit;
 
 import io.snyk.devrel.ctfdaccounthook.Exception.CtfdApiException;
-import io.snyk.devrel.ctfdaccounthook.model.CtfdApiError;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdApiErrorResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserResponse;
 import io.snyk.devrel.ctfdaccounthook.service.CtfdApiServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,9 +77,9 @@ public class CtfdApiServiceTest {
     public void whenClientResponseIsNotOk_thenThrowCtfdApiException() {
         HttpStatusCode httpStatusCode = HttpStatus.BAD_REQUEST;
         when(clientResponse.statusCode()).thenReturn(httpStatusCode);
-        CtfdApiError ctfdApiError = new CtfdApiError();
-        Mono<CtfdApiError> resMono = Mono.just(ctfdApiError);
-        when(clientResponse.bodyToMono(CtfdApiError.class)).thenReturn(resMono);
+        CtfdApiErrorResponse ctfdApiErrorResponse = new CtfdApiErrorResponse();
+        Mono<CtfdApiErrorResponse> resMono = Mono.just(ctfdApiErrorResponse);
+        when(clientResponse.bodyToMono(CtfdApiErrorResponse.class)).thenReturn(resMono);
 
         try {
             ctfdApiService.createUser("whatevs@example.com", "fun-blue-waf");

@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class CtfdApiController {
 
     @Value("#{ @environment['alias.retries'] }")
-    private int aliasRetries;
+    private Integer aliasRetries;
     private final CtfdApiService ctfdApiService;
     private final AliasService aliasService;
 

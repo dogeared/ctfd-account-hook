@@ -33,7 +33,7 @@ public class CtfdApiController {
         do {
             String alias = aliasService.getAlias();
             try {
-                return ctfdApiService.createUser(req.getEmail(), alias);
+                return ctfdApiService.createUser(req, alias);
             } catch (CtfdApiException e) {
                 // check to see if the issue is NAME or EMAIL related
                 // if name, try again

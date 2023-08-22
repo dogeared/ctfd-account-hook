@@ -2,6 +2,7 @@ package io.snyk.devrel.ctfdaccounthook.unit;
 
 import io.snyk.devrel.ctfdaccounthook.Exception.CtfdApiException;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdApiErrorResponse;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserRequest;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserResponse;
 import io.snyk.devrel.ctfdaccounthook.service.CtfdApiServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,8 +37,13 @@ public class CtfdApiServiceTest {
 
     private CtfdApiServiceImpl ctfdApiService;
 
+    private CtfdCreateUserRequest ctfdCreateUserRequest;
+
     @BeforeEach
     public void setup() {
+        ctfdCreateUserRequest = new CtfdCreateUserRequest();
+        ctfdCreateUserRequest.setEmail("whatevs@example.com");
+
         ctfdApiService = new CtfdApiServiceImpl(webClientBuilder);
         ReflectionTestUtils.setField(ctfdApiService, "ctfdApiToken", "blerg");
         ReflectionTestUtils.setField(ctfdApiService, "ctfdApiBaseUrl", "http://blerg");
@@ -68,7 +74,7 @@ public class CtfdApiServiceTest {
         Mono<CtfdCreateUserResponse> resMono = Mono.just(ctfdCreateUserResponse);
         when(clientResponse.bodyToMono(CtfdCreateUserResponse.class)).thenReturn(resMono);
 
-        CtfdCreateUserResponse res = ctfdApiService.createUser("whatevs@example.com", "fun-blue-waf");
+        CtfdCreateUserResponse res = ctfdApiService.createUser(ctfdCreateUserRequest, "fun-blue-waf");
 
         assertThat(res).isEqualTo(resMono.block());
     }
@@ -82,7 +88,7 @@ public class CtfdApiServiceTest {
         when(clientResponse.bodyToMono(CtfdApiErrorResponse.class)).thenReturn(resMono);
 
         try {
-            ctfdApiService.createUser("whatevs@example.com", "fun-blue-waf");
+            ctfdApiService.createUser(ctfdCreateUserRequest, "fun-blue-waf");
             fail();
         } catch (CtfdApiException e) {
             assertThat(e.getCtfdApiError()).isEqualTo(resMono.block());

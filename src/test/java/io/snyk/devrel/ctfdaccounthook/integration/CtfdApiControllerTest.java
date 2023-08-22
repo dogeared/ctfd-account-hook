@@ -23,6 +23,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -69,7 +71,10 @@ public class CtfdApiControllerTest {
         CtfdCreateUserResponse expected = new CtfdCreateUserResponse();
         expected.setSuccess("success");
 
-        when(ctfdApiService.createUser(reqUser.getEmail(), alias)).thenReturn(expected);
+        when(ctfdApiService.createUser(
+            argThat(user -> user.getEmail().equals(reqUser.getEmail())),
+            eq(alias))
+        ).thenReturn(expected);
 
         MockHttpServletResponse response = mvc.perform(
             post(CTFD_USERS_ENDPOINT)
@@ -102,7 +107,10 @@ public class CtfdApiControllerTest {
         CtfdApiErrorResponse expected = mapper.readValue(errorString, CtfdApiErrorResponse.class);
         CtfdApiException exception = new CtfdApiException(expected);
 
-        when(ctfdApiService.createUser(reqUser.getEmail(), alias)).thenThrow(exception);
+        when(ctfdApiService.createUser(
+            argThat(user -> user.getEmail().equals(reqUser.getEmail())),
+            eq(alias))
+        ).thenThrow(exception);
 
         MockHttpServletResponse response = mvc.perform(
             post(CTFD_USERS_ENDPOINT)
@@ -135,7 +143,10 @@ public class CtfdApiControllerTest {
         CtfdApiErrorResponse expected = mapper.readValue(errorString, CtfdApiErrorResponse.class);
         CtfdApiException exception = new CtfdApiException(expected);
 
-        when(ctfdApiService.createUser(reqUser.getEmail(), alias)).thenThrow(exception);
+        when(ctfdApiService.createUser(
+            argThat(user -> user.getEmail().equals(reqUser.getEmail())),
+            eq(alias))
+        ).thenThrow(exception);
 
         MockHttpServletResponse response = mvc.perform(
             post(CTFD_USERS_ENDPOINT)
@@ -173,9 +184,12 @@ public class CtfdApiControllerTest {
         CtfdCreateUserResponse expectedSecond = new CtfdCreateUserResponse();
         expectedSecond.setSuccess("success");
 
-        when(ctfdApiService.createUser(reqUser.getEmail(), alias))
-            .thenThrow(exception)
-            .thenReturn(expectedSecond);
+        when(ctfdApiService.createUser(
+            argThat(user -> user.getEmail().equals(reqUser.getEmail())),
+            eq(alias))
+        )
+        .thenThrow(exception)
+        .thenReturn(expectedSecond);
 
         MockHttpServletResponse response = mvc.perform(
             post(CTFD_USERS_ENDPOINT)

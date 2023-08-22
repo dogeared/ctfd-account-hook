@@ -2,6 +2,7 @@ package io.snyk.devrel.ctfdaccounthook.service;
 
 import io.snyk.devrel.ctfdaccounthook.Exception.CtfdApiException;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdApiErrorResponse;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserRequest;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdUser;
 import jakarta.annotation.PostConstruct;
@@ -13,6 +14,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class CtfdApiServiceImpl implements CtfdApiService {
@@ -42,21 +44,11 @@ public class CtfdApiServiceImpl implements CtfdApiService {
     }
 
     @Override
-    public Mono<Map> getChallenges() {
-        return this.webClient.get().uri(API_URI + "/challenges").retrieve().bodyToMono(Map.class);
-    }
-
-    @Override
-    public Mono<Map> getUsers() {
-        return this.webClient.get().uri(API_URI + "/users").retrieve().bodyToMono(Map.class);
-    }
-
-    @Override
-    public CtfdCreateUserResponse createUser(String email, String alias) throws CtfdApiException {
+    public CtfdCreateUserResponse createUser(CtfdCreateUserRequest req, String alias) throws CtfdApiException {
         CtfdUser ctfdUser = new CtfdUser();
-        ctfdUser.setEmail(email);
+        ctfdUser.setEmail(req.getEmail());
         ctfdUser.setName(alias);
-        ctfdUser.setPassword("123456aA$");
+        ctfdUser.setPassword(UUID.randomUUID().toString());
         ClientResponse res = this.webClient.post().uri(API_URI + "/users")
             .body(BodyInserters.fromValue(ctfdUser))
             .exchange()

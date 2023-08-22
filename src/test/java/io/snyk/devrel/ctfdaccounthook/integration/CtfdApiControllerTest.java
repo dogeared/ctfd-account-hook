@@ -89,6 +89,35 @@ public class CtfdApiControllerTest {
     }
 
     @Test
+    public void whenCreateUserRequest_WithNotify_thenSuccess() throws Exception {
+        String alias = "abc-def-ghi";
+        when(aliasService.getAlias()).thenReturn(alias);
+
+        CtfdCreateUserRequest reqUser = new CtfdCreateUserRequest();
+        reqUser.setEmail("blarg@example.com");
+        reqUser.setNotify(true);
+
+        CtfdCreateUserResponse expected = new CtfdCreateUserResponse();
+        expected.setSuccess("success");
+
+        when(ctfdApiService.createUser(
+            argThat(user -> user.getEmail().equals(reqUser.getEmail()) && user.getNotify() == true),
+            eq(alias))
+        ).thenReturn(expected);
+
+        MockHttpServletResponse response = mvc.perform(
+            post(CTFD_USERS_ENDPOINT)
+                .header("X-TEST-HEADER", "blerg")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(reqUser))
+            )
+            .andExpect(status().isOk()).andReturn().getResponse();
+
+        CtfdCreateUserResponse actual = mapper.readValue(response.getContentAsString(), CtfdCreateUserResponse.class);
+        assertThat(actual.getSuccess()).isEqualTo(expected.getSuccess());
+    }
+
+    @Test
     public void whenCreateUserRequest_thenFail_Email() throws Exception {
         String alias = "abc-def-ghi";
         when(aliasService.getAlias()).thenReturn(alias);

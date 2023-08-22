@@ -49,7 +49,8 @@ public class CtfdApiServiceImpl implements CtfdApiService {
         ctfdUser.setEmail(req.getEmail());
         ctfdUser.setName(alias);
         ctfdUser.setPassword(UUID.randomUUID().toString());
-        ClientResponse res = this.webClient.post().uri(API_URI + "/users")
+        String uri = API_URI + "/users" + (req.getNotify()?"?notify=true":"");
+        ClientResponse res = this.webClient.post().uri(uri)
             .body(BodyInserters.fromValue(ctfdUser))
             .exchange()
             .block();

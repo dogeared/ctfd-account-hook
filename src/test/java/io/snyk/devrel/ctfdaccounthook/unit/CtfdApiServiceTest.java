@@ -21,6 +21,7 @@ import reactor.core.publisher.Mono;
 import static io.snyk.devrel.ctfdaccounthook.service.CtfdApiServiceImpl.API_URI;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -60,7 +61,7 @@ public class CtfdApiServiceTest {
         WebClient.RequestBodySpec reqBodySpec = Mockito.mock(WebClient.RequestBodySpec.class);
         when(reqUriSpec.uri(API_URI + "/users")).thenReturn(reqBodySpec);
         WebClient.RequestHeadersSpec reqHeaderSpec = Mockito.mock(WebClient.RequestHeadersSpec.class);
-        when(reqBodySpec.body(Mockito.any())).thenReturn(reqHeaderSpec);
+        when(reqBodySpec.body(any())).thenReturn(reqHeaderSpec);
         Mono<ClientResponse> clientResponseMono = Mockito.mock(Mono.class);
         when(reqHeaderSpec.exchange()).thenReturn(clientResponseMono);
         when(clientResponseMono.block()).thenReturn(clientResponse);

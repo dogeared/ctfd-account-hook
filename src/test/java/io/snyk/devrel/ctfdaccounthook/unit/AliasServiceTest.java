@@ -13,8 +13,8 @@ import java.util.Random;
 import static io.snyk.devrel.ctfdaccounthook.service.AliasService.ADJECTIVES_DICT;
 import static io.snyk.devrel.ctfdaccounthook.service.AliasService.COLORS_DICT;
 import static io.snyk.devrel.ctfdaccounthook.service.AliasService.CYBER_SECURITY_DICT;
-import static org.mockito.Mockito.when;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class AliasServiceTest {

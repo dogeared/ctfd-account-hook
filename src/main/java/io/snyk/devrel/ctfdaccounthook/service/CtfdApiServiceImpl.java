@@ -5,15 +5,14 @@ import io.snyk.devrel.ctfdaccounthook.model.CtfdApiErrorResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserRequest;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdUser;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdUserPaginatedResponse;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -24,6 +23,9 @@ public class CtfdApiServiceImpl implements CtfdApiService {
 
     @Value("#{ @environment['ctfd.api.base-url'] }")
     private String ctfdApiBaseUrl;
+
+    @Value("#{ @environment['ctfd.api.affiliation'] }")
+    private String affiliation;
 
     private final WebClient.Builder webClientBuilder;
     private WebClient webClient;
@@ -49,6 +51,7 @@ public class CtfdApiServiceImpl implements CtfdApiService {
         ctfdUser.setEmail(req.getEmail());
         ctfdUser.setName(alias);
         ctfdUser.setPassword(UUID.randomUUID().toString());
+        ctfdUser.setAffiliation(affiliation);
         String uri = API_URI + "/users" + (req.getNotify()?"?notify=true":"");
         ClientResponse res = this.webClient.post().uri(uri)
             .body(BodyInserters.fromValue(ctfdUser))
@@ -58,6 +61,24 @@ public class CtfdApiServiceImpl implements CtfdApiService {
             return res.bodyToMono(CtfdCreateUserResponse.class).block();
         }
         CtfdApiErrorResponse error = res.bodyToMono(CtfdApiErrorResponse.class).block();
+        throw new CtfdApiException(error);
+    }
+
+    @Override
+    public CtfdUserPaginatedResponse getUsersByAffiliation(String affiliation, Integer page) {
+        if (affiliation == null) {
+            affiliation = this.affiliation;
+        }
+        if (page == null) {
+            page = 1;
+        }
+        String uri = API_URI + "/users?page=" + page + ((affiliation != null)?"&affiliation=" + affiliation:"");
+        ClientResponse res = this.webClient.get().uri(uri).exchange().block();
+        if (res.statusCode().is2xxSuccessful()) {
+            return res.bodyToMono(CtfdUserPaginatedResponse.class).block();
+        }
+        CtfdApiErrorResponse error = new CtfdApiErrorResponse();
+        error.getErrors().setMessage(String.format("Unable to get page %d for affiliation: %s", page, affiliation));
         throw new CtfdApiException(error);
     }
 }

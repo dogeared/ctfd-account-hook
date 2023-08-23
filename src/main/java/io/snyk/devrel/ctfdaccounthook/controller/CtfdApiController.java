@@ -9,8 +9,10 @@ import io.snyk.devrel.ctfdaccounthook.service.CtfdApiService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -49,5 +51,18 @@ public class CtfdApiController {
             new String[]{"Attempted to find a unique alias " + (aliasRetries+1) + " times and failed."}
         );
         return ctfdApiErrorResponse;
+    }
+
+    @GetMapping("/api/v1/users")
+    public CtfdResponse getUsersByAffiliation(
+        @RequestParam(required = false) String affiliation, @RequestParam(required = false) Integer page,
+        HttpServletResponse res
+    ) {
+        try {
+            return ctfdApiService.getUsersByAffiliation(affiliation, page);
+        } catch (CtfdApiException e) {
+            res.setStatus(HttpStatus.BAD_REQUEST.value());
+            return e.getCtfdApiError();
+        }
     }
 }

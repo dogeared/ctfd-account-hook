@@ -7,6 +7,7 @@ import io.snyk.devrel.ctfdaccounthook.controller.CtfdApiController;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdApiErrorResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserRequest;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserResponse;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdUserPaginatedResponse;
 import io.snyk.devrel.ctfdaccounthook.service.AliasService;
 import io.snyk.devrel.ctfdaccounthook.service.CtfdApiService;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,16 +23,23 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import static io.snyk.devrel.ctfdaccounthook.integration.CtfdApiControllerTest.AFFILIATION;
+import static io.snyk.devrel.ctfdaccounthook.integration.CtfdApiControllerTest.HEADER;
+import static io.snyk.devrel.ctfdaccounthook.integration.CtfdApiControllerTest.TOKEN_VALUE;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(classes = CtfdAccountHookApplication.class)
-@TestPropertySource(properties = {"api.auth.header-name=X-TEST-HEADER", "api.auth.token=blerg", "alias.retries=1"})
+@TestPropertySource(properties = {
+    "api.auth.header-name=" + HEADER, "api.auth.token=" + TOKEN_VALUE,
+    "alias.retries=1", "ctfd.api.affiliation=" + AFFILIATION
+})
 public class CtfdApiControllerTest {
 
     @InjectMocks
@@ -52,6 +60,10 @@ public class CtfdApiControllerTest {
     private MockMvc mvc;
 
     private static final String CTFD_USERS_ENDPOINT = "/api/v1/users";
+    private static final String SUCCESS = "success";
+    public static final String AFFILIATION = "fetch";
+    public static final String HEADER = "X-TEST-HEADER";
+    public static final String TOKEN_VALUE = "blerg";
 
     @BeforeEach
     public void setup() {
@@ -69,7 +81,7 @@ public class CtfdApiControllerTest {
         reqUser.setEmail("blarg@example.com");
 
         CtfdCreateUserResponse expected = new CtfdCreateUserResponse();
-        expected.setSuccess("success");
+        expected.setSuccess(SUCCESS);
 
         when(ctfdApiService.createUser(
             argThat(user -> user.getEmail().equals(reqUser.getEmail())),
@@ -78,7 +90,7 @@ public class CtfdApiControllerTest {
 
         MockHttpServletResponse response = mvc.perform(
             post(CTFD_USERS_ENDPOINT)
-                .header("X-TEST-HEADER", "blerg")
+                .header(HEADER, TOKEN_VALUE)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(mapper.writeValueAsString(reqUser))
         )
@@ -98,7 +110,7 @@ public class CtfdApiControllerTest {
         reqUser.setNotify(true);
 
         CtfdCreateUserResponse expected = new CtfdCreateUserResponse();
-        expected.setSuccess("success");
+        expected.setSuccess(SUCCESS);
 
         when(ctfdApiService.createUser(
             argThat(user -> user.getEmail().equals(reqUser.getEmail()) && user.getNotify() == true),
@@ -107,7 +119,7 @@ public class CtfdApiControllerTest {
 
         MockHttpServletResponse response = mvc.perform(
             post(CTFD_USERS_ENDPOINT)
-                .header("X-TEST-HEADER", "blerg")
+                .header(HEADER, TOKEN_VALUE)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(mapper.writeValueAsString(reqUser))
             )
@@ -143,7 +155,7 @@ public class CtfdApiControllerTest {
 
         MockHttpServletResponse response = mvc.perform(
             post(CTFD_USERS_ENDPOINT)
-                .header("X-TEST-HEADER", "blerg")
+                .header(HEADER, TOKEN_VALUE)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(mapper.writeValueAsString(reqUser))
         )
@@ -179,7 +191,7 @@ public class CtfdApiControllerTest {
 
         MockHttpServletResponse response = mvc.perform(
             post(CTFD_USERS_ENDPOINT)
-                .header("X-TEST-HEADER", "blerg")
+                .header(HEADER, TOKEN_VALUE)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(mapper.writeValueAsString(reqUser))
             )
@@ -211,7 +223,7 @@ public class CtfdApiControllerTest {
         CtfdApiException exception = new CtfdApiException(expectedFirst);
 
         CtfdCreateUserResponse expectedSecond = new CtfdCreateUserResponse();
-        expectedSecond.setSuccess("success");
+        expectedSecond.setSuccess(SUCCESS);
 
         when(ctfdApiService.createUser(
             argThat(user -> user.getEmail().equals(reqUser.getEmail())),
@@ -222,7 +234,7 @@ public class CtfdApiControllerTest {
 
         MockHttpServletResponse response = mvc.perform(
             post(CTFD_USERS_ENDPOINT)
-                .header("X-TEST-HEADER", "blerg")
+                .header(HEADER, TOKEN_VALUE)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(mapper.writeValueAsString(reqUser))
             )
@@ -230,5 +242,24 @@ public class CtfdApiControllerTest {
 
         CtfdCreateUserResponse actual = mapper.readValue(response.getContentAsString(), CtfdCreateUserResponse.class);
         assertThat(actual.getSuccess()).isEqualTo(expectedSecond.getSuccess());
+    }
+
+    @Test
+    public void whenGetUsers_thenSuccess() throws Exception {
+
+        CtfdUserPaginatedResponse expected = new CtfdUserPaginatedResponse();
+        expected.setSuccess(SUCCESS);
+        when(ctfdApiService.getUsersByAffiliation(AFFILIATION, 1)).thenReturn(expected);
+
+        MockHttpServletResponse response = mvc.perform(
+            get(CTFD_USERS_ENDPOINT + "?page=1&affiliation=" + AFFILIATION)
+                .header(HEADER, TOKEN_VALUE)
+                .contentType(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(status().isOk()).andReturn().getResponse();
+
+        CtfdUserPaginatedResponse actual =
+            mapper.readValue(response.getContentAsString(), CtfdUserPaginatedResponse.class);
+        assertThat(actual.getSuccess()).isEqualTo(expected.getSuccess());
     }
 }

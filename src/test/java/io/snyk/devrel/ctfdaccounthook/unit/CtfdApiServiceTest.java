@@ -4,6 +4,7 @@ import io.snyk.devrel.ctfdaccounthook.Exception.CtfdApiException;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdApiErrorResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserRequest;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserResponse;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdUserPaginatedResponse;
 import io.snyk.devrel.ctfdaccounthook.service.CtfdApiServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,9 +37,21 @@ public class CtfdApiServiceTest {
     @Mock
     ClientResponse clientResponse;
 
+    @Mock
+    WebClient.RequestHeadersUriSpec reqHeaderUriSpec;
+
+    @Mock
+    WebClient.RequestHeadersSpec reqHeaderSpec;
+
     private CtfdApiServiceImpl ctfdApiService;
 
     private CtfdCreateUserRequest ctfdCreateUserRequest;
+
+    private static final String BASE_URL = "http://blerg";
+    private static final String TOKEN_VALUE = "blerg";
+    private static final String AFFILIATION = "fetch";
+    private static final Integer PAGE = 20;
+    private static final String USERS_ENDPOINT = "/users";
 
     @BeforeEach
     public void setup() {
@@ -46,29 +59,37 @@ public class CtfdApiServiceTest {
         ctfdCreateUserRequest.setEmail("whatevs@example.com");
 
         ctfdApiService = new CtfdApiServiceImpl(webClientBuilder);
-        ReflectionTestUtils.setField(ctfdApiService, "ctfdApiToken", "blerg");
-        ReflectionTestUtils.setField(ctfdApiService, "ctfdApiBaseUrl", "http://blerg");
-        when(webClientBuilder.baseUrl("http://blerg")).thenReturn(webClientBuilder);
-        when(webClientBuilder.defaultHeader("Authorization", "Token " + "blerg"))
+        ReflectionTestUtils.setField(ctfdApiService, "ctfdApiToken", TOKEN_VALUE);
+        ReflectionTestUtils.setField(ctfdApiService, "ctfdApiBaseUrl", BASE_URL);
+        ReflectionTestUtils.setField(ctfdApiService, "affiliation", AFFILIATION);
+        when(webClientBuilder.baseUrl(BASE_URL)).thenReturn(webClientBuilder);
+        when(webClientBuilder.defaultHeader("Authorization", "Token " + TOKEN_VALUE))
             .thenReturn(webClientBuilder);
         when(webClientBuilder.defaultHeader("Content-Type", "application/json"))
             .thenReturn(webClientBuilder);
         when(webClientBuilder.build()).thenReturn(webClient);
         ctfdApiService.setup();
 
-        WebClient.RequestBodyUriSpec reqUriSpec = Mockito.mock(WebClient.RequestBodyUriSpec.class);
-        when(webClient.post()).thenReturn(reqUriSpec);
-        WebClient.RequestBodySpec reqBodySpec = Mockito.mock(WebClient.RequestBodySpec.class);
-        when(reqUriSpec.uri(API_URI + "/users")).thenReturn(reqBodySpec);
-        WebClient.RequestHeadersSpec reqHeaderSpec = Mockito.mock(WebClient.RequestHeadersSpec.class);
-        when(reqBodySpec.body(any())).thenReturn(reqHeaderSpec);
         Mono<ClientResponse> clientResponseMono = Mockito.mock(Mono.class);
         when(reqHeaderSpec.exchange()).thenReturn(clientResponseMono);
         when(clientResponseMono.block()).thenReturn(clientResponse);
     }
 
+    public void setupCreateUser() {
+        WebClient.RequestBodyUriSpec reqUriSpec = Mockito.mock(WebClient.RequestBodyUriSpec.class);
+        when(webClient.post()).thenReturn(reqUriSpec);
+        WebClient.RequestBodySpec reqBodySpec = Mockito.mock(WebClient.RequestBodySpec.class);
+        when(reqUriSpec.uri(API_URI + USERS_ENDPOINT)).thenReturn(reqBodySpec);
+        when(reqBodySpec.body(any())).thenReturn(reqHeaderSpec);
+    }
+
+    public void setupGetUsers() {
+        when(webClient.get()).thenReturn(reqHeaderUriSpec);
+    }
+
     @Test
     public void whenClientResponseIsOk_thenReturnCtfdCreateUserResponse() {
+        setupCreateUser();
         HttpStatusCode httpStatusCode = HttpStatus.OK;
         when(clientResponse.statusCode()).thenReturn(httpStatusCode);
         CtfdCreateUserResponse ctfdCreateUserResponse = new CtfdCreateUserResponse();
@@ -82,6 +103,7 @@ public class CtfdApiServiceTest {
 
     @Test
     public void whenClientResponseIsNotOk_thenThrowCtfdApiException() {
+        setupCreateUser();
         HttpStatusCode httpStatusCode = HttpStatus.BAD_REQUEST;
         when(clientResponse.statusCode()).thenReturn(httpStatusCode);
         CtfdApiErrorResponse ctfdApiErrorResponse = new CtfdApiErrorResponse();
@@ -93,6 +115,39 @@ public class CtfdApiServiceTest {
             fail();
         } catch (CtfdApiException e) {
             assertThat(e.getCtfdApiError()).isEqualTo(resMono.block());
+        }
+    }
+
+    @Test
+    public void whenGetUsersByAffiliation_Default_Success() {
+        setupGetUsers();
+        when(reqHeaderUriSpec.uri(API_URI + USERS_ENDPOINT + "?page=1&affiliation=" + AFFILIATION))
+            .thenReturn(reqHeaderSpec);
+        HttpStatusCode httpStatusCode = HttpStatus.OK;
+        when(clientResponse.statusCode()).thenReturn(httpStatusCode);
+        CtfdUserPaginatedResponse expected = new CtfdUserPaginatedResponse();
+        Mono<CtfdUserPaginatedResponse> resMono = Mono.just(expected);
+        when(clientResponse.bodyToMono(CtfdUserPaginatedResponse.class)).thenReturn(resMono);
+
+        CtfdUserPaginatedResponse actual = ctfdApiService.getUsersByAffiliation(null, null);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void whenGetUsersByAffiliation_WithPage_Fail() {
+        setupGetUsers();
+        when(reqHeaderUriSpec.uri(API_URI + USERS_ENDPOINT + "?page=" + PAGE + "&affiliation=" + AFFILIATION))
+            .thenReturn(reqHeaderSpec);
+        HttpStatusCode httpStatusCode = HttpStatus.BAD_REQUEST;
+        when(clientResponse.statusCode()).thenReturn(httpStatusCode);
+
+        try {
+            ctfdApiService.getUsersByAffiliation(null, PAGE);
+            fail();
+        } catch (CtfdApiException e) {
+            CtfdApiErrorResponse actual = e.getCtfdApiError();
+            assertThat(actual.getErrors().getMessage())
+                .isEqualTo("Unable to get page " + PAGE + " for affiliation: " + AFFILIATION);
         }
     }
 }

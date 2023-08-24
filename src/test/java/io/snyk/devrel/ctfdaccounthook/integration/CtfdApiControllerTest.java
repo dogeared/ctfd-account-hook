@@ -9,8 +9,8 @@ import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserRequest;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdMeta;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdUpdateAndEmailResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdUser;
-import io.snyk.devrel.ctfdaccounthook.model.CtfdUserResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdUserPaginatedResponse;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdUserResponse;
 import io.snyk.devrel.ctfdaccounthook.service.AliasService;
 import io.snyk.devrel.ctfdaccounthook.service.CtfdApiService;
 import org.junit.jupiter.api.BeforeEach;
@@ -333,5 +333,32 @@ public class CtfdApiControllerTest {
         CtfdUpdateAndEmailResponse actual =
             mapper.readValue(response.getContentAsString(), CtfdUpdateAndEmailResponse.class);
         assertThat(actual.getUsersProcessed()).isEqualTo(1);
+    }
+
+    @Test
+    public void whenUpdateAndEmailUsers_Fail() throws Exception {
+        String errorString = String.format("""
+        {
+            "errors": {
+                "message": "Unable to get page 1 for affiliation: %s"
+            }
+        }
+        """, AFFILIATION);
+
+        CtfdApiErrorResponse expected = mapper.readValue(errorString, CtfdApiErrorResponse.class);
+        CtfdApiException exception = new CtfdApiException(expected);
+
+        when(ctfdApiService.getUsersByAffiliation(AFFILIATION, 1)).thenThrow(exception);
+
+        MockHttpServletResponse response = mvc.perform(
+            post(CTFD_EMAIL_ENDPOINT)
+                .header(HEADER, TOKEN_VALUE)
+                .contentType(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(status().isBadRequest()).andReturn().getResponse();
+
+        CtfdApiErrorResponse actual =
+            mapper.readValue(response.getContentAsString(), CtfdApiErrorResponse.class);
+        assertThat(actual.getErrors().getMessage()).isEqualTo(expected.getErrors().getMessage());
     }
 }

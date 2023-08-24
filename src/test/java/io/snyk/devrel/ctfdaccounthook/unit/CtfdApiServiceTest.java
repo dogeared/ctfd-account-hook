@@ -4,14 +4,13 @@ import io.snyk.devrel.ctfdaccounthook.Exception.CtfdApiException;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdApiErrorResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserRequest;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdUser;
-import io.snyk.devrel.ctfdaccounthook.model.CtfdUserResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdUserPaginatedResponse;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdUserResponse;
 import io.snyk.devrel.ctfdaccounthook.service.CtfdApiServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -24,6 +23,8 @@ import static io.snyk.devrel.ctfdaccounthook.service.CtfdApiServiceImpl.API_URI;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,6 +45,15 @@ public class CtfdApiServiceTest {
     @Mock
     WebClient.RequestHeadersSpec reqHeaderSpec;
 
+    @Mock
+    WebClient.RequestBodyUriSpec reqUriSpec;
+
+    @Mock
+    WebClient.RequestBodySpec reqBodySpec;
+
+    @Mock
+    WebClient.ResponseSpec resSpec;
+
     private CtfdApiServiceImpl ctfdApiService;
 
     private CtfdCreateUserRequest ctfdCreateUserRequest;
@@ -54,6 +64,13 @@ public class CtfdApiServiceTest {
     private static final Integer PAGE = 20;
     private static final String USERS_ENDPOINT = "/users";
 
+    private static final String EMAIL_TEMPLATE = """
+    {"text": "A new account has been created for you for {ctf-name} at {url}\\n\\nUsername: {name}\\nPassword: {password}"}
+    """;
+
+    private static final String CTFD_NAME = "Fetch It!";
+    private static final String CTFD_URL = "http://fetchit";
+
     @BeforeEach
     public void setup() {
         ctfdCreateUserRequest = new CtfdCreateUserRequest();
@@ -63,6 +80,9 @@ public class CtfdApiServiceTest {
         ReflectionTestUtils.setField(ctfdApiService, "ctfdApiToken", TOKEN_VALUE);
         ReflectionTestUtils.setField(ctfdApiService, "ctfdApiBaseUrl", BASE_URL);
         ReflectionTestUtils.setField(ctfdApiService, "affiliation", AFFILIATION);
+        ReflectionTestUtils.setField(ctfdApiService, "emailTemplate", EMAIL_TEMPLATE);
+        ReflectionTestUtils.setField(ctfdApiService, "ctfdName", CTFD_NAME);
+        ReflectionTestUtils.setField(ctfdApiService, "ctfdUrl", CTFD_URL);
     }
 
     public void generalSetup() {
@@ -73,16 +93,16 @@ public class CtfdApiServiceTest {
             .thenReturn(webClientBuilder);
         when(webClientBuilder.build()).thenReturn(webClient);
         ctfdApiService.setup();
+    }
 
-        Mono<ClientResponse> clientResponseMono = Mockito.mock(Mono.class);
+    public void exchangeSetup() {
+        Mono<ClientResponse> clientResponseMono = mock(Mono.class);
         when(reqHeaderSpec.exchange()).thenReturn(clientResponseMono);
         when(clientResponseMono.block()).thenReturn(clientResponse);
     }
 
     public void setupCreateUser() {
-        WebClient.RequestBodyUriSpec reqUriSpec = Mockito.mock(WebClient.RequestBodyUriSpec.class);
         when(webClient.post()).thenReturn(reqUriSpec);
-        WebClient.RequestBodySpec reqBodySpec = Mockito.mock(WebClient.RequestBodySpec.class);
         when(reqUriSpec.uri(API_URI + USERS_ENDPOINT)).thenReturn(reqBodySpec);
         when(reqBodySpec.body(any())).thenReturn(reqHeaderSpec);
     }
@@ -92,16 +112,20 @@ public class CtfdApiServiceTest {
     }
 
     public void setupPatchUser() {
-        WebClient.RequestBodyUriSpec reqUriSpec = Mockito.mock(WebClient.RequestBodyUriSpec.class);
         when(webClient.patch()).thenReturn(reqUriSpec);
-        WebClient.RequestBodySpec reqBodySpec = Mockito.mock(WebClient.RequestBodySpec.class);
         when(reqUriSpec.uri(API_URI + USERS_ENDPOINT + "/1")).thenReturn(reqBodySpec);
         when(reqBodySpec.body(any())).thenReturn(reqHeaderSpec);
+    }
+
+    public void emailUserSetup(Integer id) {
+        when(webClient.post()).thenReturn(reqUriSpec);
+        when(reqUriSpec.uri(API_URI + USERS_ENDPOINT + "/" + id + "/email")).thenReturn(reqBodySpec);
     }
 
     @Test
     public void whenClientResponseIsOk_thenReturnCtfdCreateUserResponse() {
         generalSetup();
+        exchangeSetup();
         setupCreateUser();
         HttpStatusCode httpStatusCode = HttpStatus.OK;
         when(clientResponse.statusCode()).thenReturn(httpStatusCode);
@@ -117,6 +141,7 @@ public class CtfdApiServiceTest {
     @Test
     public void whenClientResponseIsNotOk_thenThrowCtfdApiException() {
         generalSetup();
+        exchangeSetup();
         setupCreateUser();
         HttpStatusCode httpStatusCode = HttpStatus.BAD_REQUEST;
         when(clientResponse.statusCode()).thenReturn(httpStatusCode);
@@ -135,6 +160,7 @@ public class CtfdApiServiceTest {
     @Test
     public void whenGetUsersByAffiliation_Default_Success() {
         generalSetup();
+        exchangeSetup();
         setupGetUsers();
         when(reqHeaderUriSpec.uri(API_URI + USERS_ENDPOINT + "?page=1&affiliation=" + AFFILIATION))
             .thenReturn(reqHeaderSpec);
@@ -151,6 +177,7 @@ public class CtfdApiServiceTest {
     @Test
     public void whenGetUsersByAffiliation_WithPage_Fail() {
         generalSetup();
+        exchangeSetup();
         setupGetUsers();
         when(reqHeaderUriSpec.uri(API_URI + USERS_ENDPOINT + "?page=" + PAGE + "&affiliation=" + AFFILIATION))
             .thenReturn(reqHeaderSpec);
@@ -194,6 +221,7 @@ public class CtfdApiServiceTest {
     @Test
     public void when_Patch_CtfdUser_Success() {
         generalSetup();
+        exchangeSetup();
         setupPatchUser();
         HttpStatusCode httpStatusCode = HttpStatus.OK;
         when(clientResponse.statusCode()).thenReturn(httpStatusCode);
@@ -210,6 +238,7 @@ public class CtfdApiServiceTest {
     @Test
     public void when_Patch_CtfdUser_Fail() {
         generalSetup();
+        exchangeSetup();
         setupPatchUser();
         HttpStatusCode httpStatusCode = HttpStatus.BAD_REQUEST;
         when(clientResponse.statusCode()).thenReturn(httpStatusCode);
@@ -230,6 +259,7 @@ public class CtfdApiServiceTest {
     @Test
     public void whenUpdatePassword_Success() {
         generalSetup();
+        exchangeSetup();
         setupPatchUser();
         HttpStatusCode httpStatusCode = HttpStatus.OK;
         when(clientResponse.statusCode()).thenReturn(httpStatusCode);
@@ -242,5 +272,42 @@ public class CtfdApiServiceTest {
         assertThat(ctfdUser.getPassword()).isNull();
         CtfdUser actual = ctfdApiService.updatePassword(ctfdUser);
         assertThat(actual.getPassword()).isNotEmpty();
+    }
+
+    @Test
+    public void when_EmailUser_Success() {
+        generalSetup();
+
+        CtfdUser ctfdUser = new CtfdUser();
+        ctfdUser.setId(1);
+        ctfdUser.setName("name");
+        ctfdUser.setPassword("password");
+
+        CtfdUserResponse expected = new CtfdUserResponse();
+        expected.setUser(ctfdUser);
+        expected.setSuccess("success");
+
+        Mono<CtfdUserResponse> resMono = Mono.just(expected);
+        Mono<CtfdUserResponse> resMonoSpy = spy(resMono);
+
+        emailUserSetup(1);
+
+        String emailText = EMAIL_TEMPLATE
+            .replace("{ctf-name}", CTFD_NAME)
+            .replace("{url}", CTFD_URL)
+            .replace("{name}", ctfdUser.getName())
+            .replace("{password}", ctfdUser.getPassword());
+        String uri = API_URI + "/users/" + ctfdUser.getId() + "/email";
+
+        when(reqUriSpec.uri(API_URI + "/users/1/email")).thenReturn(reqBodySpec);
+        when(reqBodySpec.bodyValue(emailText)).thenReturn(reqHeaderSpec);
+        when(reqHeaderSpec.retrieve()).thenReturn(resSpec);
+        when(resSpec.onStatus(any(), any())).thenReturn(resSpec);
+        when(resSpec.bodyToMono(CtfdUserResponse.class)).thenReturn(resMonoSpy);
+        when(resMonoSpy.retryWhen(ctfdApiService.getRetryBackoffSpec())).thenReturn(resMonoSpy);
+        when(resMonoSpy.block()).thenReturn(expected);
+
+        CtfdUserResponse actual = ctfdApiService.emailUser(ctfdUser);
+        assertThat(actual).isEqualTo(expected);
     }
 }

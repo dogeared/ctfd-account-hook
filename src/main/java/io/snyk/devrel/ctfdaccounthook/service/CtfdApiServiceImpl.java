@@ -54,6 +54,8 @@ public class CtfdApiServiceImpl implements CtfdApiService {
         this.webClientBuilder = webClientBuilder;
     }
 
+    private RetryBackoffSpec retryBackoffSpec;
+
     @PostConstruct
     public void setup() {
         this.webClient = this.webClientBuilder
@@ -61,6 +63,12 @@ public class CtfdApiServiceImpl implements CtfdApiService {
             .defaultHeader("Authorization", "Token " + ctfdApiToken)
             .defaultHeader("Content-Type", "application/json")
             .build();
+        this.retryBackoffSpec = Retry.backoff(2, Duration.ofSeconds(60))
+            .filter(this::isTooManyRequestsException)
+            .doBeforeRetry(
+                retrySignal -> log.debug("Retrying after exception: {}", retrySignal.failure().getLocalizedMessage())
+            )
+            .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> retrySignal.failure());
     }
 
     @Override
@@ -139,24 +147,19 @@ public class CtfdApiServiceImpl implements CtfdApiService {
             .bodyValue(emailText)
             .retrieve()
             .onStatus(
-                status -> status.isSameCodeAs(HttpStatus.BAD_REQUEST),
+                HttpStatus.BAD_REQUEST::equals,
                 response -> {
                     CtfdApiErrorResponse error = response.bodyToMono(CtfdApiErrorResponse.class).block();
                     throw new CtfdApiException(error);
                 }
             )
             .bodyToMono(CtfdUserResponse.class)
-            .retryWhen(retryWhenTooManyRequests())
+            .retryWhen(retryBackoffSpec)
             .block();
     }
 
-    private RetryBackoffSpec retryWhenTooManyRequests() {
-        return Retry.backoff(2, Duration.ofSeconds(60))
-            .filter(this::isTooManyRequestsException)
-            .doBeforeRetry(
-                retrySignal -> log.debug("Retrying after exception: {}", retrySignal.failure().getLocalizedMessage())
-            )
-            .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> retrySignal.failure());
+    public RetryBackoffSpec getRetryBackoffSpec() {
+        return retryBackoffSpec;
     }
 
     private boolean isTooManyRequestsException(final Throwable throwable) {

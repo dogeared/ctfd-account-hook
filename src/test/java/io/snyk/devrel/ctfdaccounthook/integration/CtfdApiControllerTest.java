@@ -6,7 +6,7 @@ import io.snyk.devrel.ctfdaccounthook.Exception.CtfdApiException;
 import io.snyk.devrel.ctfdaccounthook.controller.CtfdApiController;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdApiErrorResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserRequest;
-import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserResponse;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdUserResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdUserPaginatedResponse;
 import io.snyk.devrel.ctfdaccounthook.service.AliasService;
 import io.snyk.devrel.ctfdaccounthook.service.CtfdApiService;
@@ -80,7 +80,7 @@ public class CtfdApiControllerTest {
         CtfdCreateUserRequest reqUser = new CtfdCreateUserRequest();
         reqUser.setEmail("blarg@example.com");
 
-        CtfdCreateUserResponse expected = new CtfdCreateUserResponse();
+        CtfdUserResponse expected = new CtfdUserResponse();
         expected.setSuccess(SUCCESS);
 
         when(ctfdApiService.createUser(
@@ -96,7 +96,7 @@ public class CtfdApiControllerTest {
         )
         .andExpect(status().isOk()).andReturn().getResponse();
 
-        CtfdCreateUserResponse actual = mapper.readValue(response.getContentAsString(), CtfdCreateUserResponse.class);
+        CtfdUserResponse actual = mapper.readValue(response.getContentAsString(), CtfdUserResponse.class);
         assertThat(actual.getSuccess()).isEqualTo(expected.getSuccess());
     }
 
@@ -109,7 +109,7 @@ public class CtfdApiControllerTest {
         reqUser.setEmail("blarg@example.com");
         reqUser.setNotify(true);
 
-        CtfdCreateUserResponse expected = new CtfdCreateUserResponse();
+        CtfdUserResponse expected = new CtfdUserResponse();
         expected.setSuccess(SUCCESS);
 
         when(ctfdApiService.createUser(
@@ -125,7 +125,7 @@ public class CtfdApiControllerTest {
             )
             .andExpect(status().isOk()).andReturn().getResponse();
 
-        CtfdCreateUserResponse actual = mapper.readValue(response.getContentAsString(), CtfdCreateUserResponse.class);
+        CtfdUserResponse actual = mapper.readValue(response.getContentAsString(), CtfdUserResponse.class);
         assertThat(actual.getSuccess()).isEqualTo(expected.getSuccess());
     }
 
@@ -222,7 +222,7 @@ public class CtfdApiControllerTest {
         CtfdApiErrorResponse expectedFirst = mapper.readValue(errorString, CtfdApiErrorResponse.class);
         CtfdApiException exception = new CtfdApiException(expectedFirst);
 
-        CtfdCreateUserResponse expectedSecond = new CtfdCreateUserResponse();
+        CtfdUserResponse expectedSecond = new CtfdUserResponse();
         expectedSecond.setSuccess(SUCCESS);
 
         when(ctfdApiService.createUser(
@@ -240,7 +240,7 @@ public class CtfdApiControllerTest {
             )
             .andExpect(status().isOk()).andReturn().getResponse();
 
-        CtfdCreateUserResponse actual = mapper.readValue(response.getContentAsString(), CtfdCreateUserResponse.class);
+        CtfdUserResponse actual = mapper.readValue(response.getContentAsString(), CtfdUserResponse.class);
         assertThat(actual.getSuccess()).isEqualTo(expectedSecond.getSuccess());
     }
 

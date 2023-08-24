@@ -3,7 +3,7 @@ package io.snyk.devrel.ctfdaccounthook.unit;
 import io.snyk.devrel.ctfdaccounthook.Exception.CtfdApiException;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdApiErrorResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserRequest;
-import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserResponse;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdUserResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdUserPaginatedResponse;
 import io.snyk.devrel.ctfdaccounthook.service.CtfdApiServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,11 +92,11 @@ public class CtfdApiServiceTest {
         setupCreateUser();
         HttpStatusCode httpStatusCode = HttpStatus.OK;
         when(clientResponse.statusCode()).thenReturn(httpStatusCode);
-        CtfdCreateUserResponse ctfdCreateUserResponse = new CtfdCreateUserResponse();
-        Mono<CtfdCreateUserResponse> resMono = Mono.just(ctfdCreateUserResponse);
-        when(clientResponse.bodyToMono(CtfdCreateUserResponse.class)).thenReturn(resMono);
+        CtfdUserResponse ctfdUserResponse = new CtfdUserResponse();
+        Mono<CtfdUserResponse> resMono = Mono.just(ctfdUserResponse);
+        when(clientResponse.bodyToMono(CtfdUserResponse.class)).thenReturn(resMono);
 
-        CtfdCreateUserResponse res = ctfdApiService.createUser(ctfdCreateUserRequest, "fun-blue-waf");
+        CtfdUserResponse res = ctfdApiService.createUser(ctfdCreateUserRequest, "fun-blue-waf");
 
         assertThat(res).isEqualTo(resMono.block());
     }

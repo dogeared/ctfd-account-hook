@@ -3,7 +3,7 @@ package io.snyk.devrel.ctfdaccounthook.service;
 import io.snyk.devrel.ctfdaccounthook.Exception.CtfdApiException;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdApiErrorResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserRequest;
-import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserResponse;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdUserResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdUser;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdUserPaginatedResponse;
 import jakarta.annotation.PostConstruct;
@@ -15,7 +15,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.util.retry.Retry;
+import reactor.util.retry.RetryBackoffSpec;
 
+import java.time.Duration;
 import java.util.UUID;
 
 @Service
@@ -60,7 +64,7 @@ public class CtfdApiServiceImpl implements CtfdApiService {
     }
 
     @Override
-    public CtfdCreateUserResponse createUser(CtfdCreateUserRequest req, String alias) throws CtfdApiException {
+    public CtfdUserResponse createUser(CtfdCreateUserRequest req, String alias) throws CtfdApiException {
         CtfdUser ctfdUser = new CtfdUser();
         ctfdUser.setEmail(req.getEmail());
         ctfdUser.setName(alias);
@@ -72,7 +76,7 @@ public class CtfdApiServiceImpl implements CtfdApiService {
             .exchange()
             .block();
         if (res.statusCode().is2xxSuccessful()) {
-            return res.bodyToMono(CtfdCreateUserResponse.class).block();
+            return res.bodyToMono(CtfdUserResponse.class).block();
         }
         CtfdApiErrorResponse error = res.bodyToMono(CtfdApiErrorResponse.class).block();
         throw new CtfdApiException(error);
@@ -97,7 +101,7 @@ public class CtfdApiServiceImpl implements CtfdApiService {
     }
 
     @Override
-    public CtfdCreateUserResponse updateUser(CtfdUser ctfdUser) {
+    public CtfdUserResponse updateUser(CtfdUser ctfdUser) {
         if (ctfdUser == null || ctfdUser.getId() == null) {
             log.debug("passed in CtfdUser is null or its id is null.");
             return null;
@@ -107,7 +111,7 @@ public class CtfdApiServiceImpl implements CtfdApiService {
             .exchange()
             .block();
         if (res.statusCode().is2xxSuccessful()) {
-            return res.bodyToMono(CtfdCreateUserResponse.class).block();
+            return res.bodyToMono(CtfdUserResponse.class).block();
         }
         CtfdApiErrorResponse error = res.bodyToMono(CtfdApiErrorResponse.class).block();
         throw new CtfdApiException(error);
@@ -122,28 +126,38 @@ public class CtfdApiServiceImpl implements CtfdApiService {
     }
 
     @Override
-    public CtfdCreateUserResponse emailUser(CtfdUser ctfdUser) {
+    public CtfdUserResponse emailUser(CtfdUser ctfdUser) {
         String emailText = emailTemplate
             .replace("{ctf-name}", ctfdName)
             .replace("{url}", ctfdUrl)
             .replace("{name}", ctfdUser.getName())
             .replace("{password}", ctfdUser.getPassword());
         String uri = API_URI + "/users/" + ctfdUser.getId() + "/email";
-        ClientResponse res = this.webClient.post().uri(uri)
+        return this.webClient.post().uri(uri)
             .bodyValue(emailText)
-            .exchange()
+            .retrieve()
+            .onStatus(
+                status -> status.isSameCodeAs(HttpStatus.BAD_REQUEST),
+                response -> {
+                    CtfdApiErrorResponse error = response.bodyToMono(CtfdApiErrorResponse.class).block();
+                    throw new CtfdApiException(error);
+                }
+            )
+            .bodyToMono(CtfdUserResponse.class)
+            .retryWhen(retryWhenTooManyRequests())
             .block();
-        if (res.statusCode().is2xxSuccessful()) {
-            return res.bodyToMono(CtfdCreateUserResponse.class).block();
-        } else if (res.statusCode().isSameCodeAs(HttpStatus.TOO_MANY_REQUESTS)) {
-            try {
-                Thread.sleep(60000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            return emailUser(ctfdUser);
-        }
-        CtfdApiErrorResponse error = res.bodyToMono(CtfdApiErrorResponse.class).block();
-        throw new CtfdApiException(error);
+    }
+
+    private RetryBackoffSpec retryWhenTooManyRequests() {
+        return Retry.backoff(2, Duration.ofSeconds(60))
+            .filter(this::isTooManyRequestsException)
+            .doBeforeRetry(
+                retrySignal -> log.debug("Retrying after exception: {}", retrySignal.failure().getLocalizedMessage())
+            )
+            .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> retrySignal.failure());
+    }
+
+    private boolean isTooManyRequestsException(final Throwable throwable) {
+        return throwable instanceof WebClientResponseException.TooManyRequests;
     }
 }

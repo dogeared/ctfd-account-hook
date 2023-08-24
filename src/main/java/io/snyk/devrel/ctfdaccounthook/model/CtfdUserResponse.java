@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class CtfdCreateUserResponse implements CtfdResponse {
+public class CtfdUserResponse implements CtfdResponse {
 
     @JsonProperty("data")
     private CtfdUser user;

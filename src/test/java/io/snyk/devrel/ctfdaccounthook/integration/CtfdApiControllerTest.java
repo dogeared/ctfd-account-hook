@@ -262,4 +262,32 @@ public class CtfdApiControllerTest {
             mapper.readValue(response.getContentAsString(), CtfdUserPaginatedResponse.class);
         assertThat(actual.getSuccess()).isEqualTo(expected.getSuccess());
     }
+
+    @Test
+    public void whenGetUsers_thenFail() throws Exception {
+
+        String errorString = String.format("""
+        {
+            "errors": {
+                "message": "Unable to get page 1 for affiliation: %s"
+            }
+        }
+        """, AFFILIATION);
+
+        CtfdApiErrorResponse expected = mapper.readValue(errorString, CtfdApiErrorResponse.class);
+        CtfdApiException exception = new CtfdApiException(expected);
+
+        when(ctfdApiService.getUsersByAffiliation(AFFILIATION, 1)).thenThrow(exception);
+
+        MockHttpServletResponse response = mvc.perform(
+            get(CTFD_USERS_ENDPOINT + "?page=1&affiliation=" + AFFILIATION)
+                .header(HEADER, TOKEN_VALUE)
+                .contentType(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(status().isBadRequest()).andReturn().getResponse();
+
+        CtfdApiErrorResponse actual =
+                mapper.readValue(response.getContentAsString(), CtfdApiErrorResponse.class);
+        assertThat(actual.getErrors().getMessage()).isEqualTo(expected.getErrors().getMessage());
+    }
 }

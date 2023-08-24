@@ -1,0 +1,19 @@
+logging:
+  level:
+    io.snyk.devrel: DEBUG
+api:
+  auth:
+    header-name: X-API-KEY
+    token: <shared secret>
+alias:
+  retries: 10
+ctfd:
+  info:
+    name: <event name>
+    url: <event url>
+  api:
+    token: <ctfd token>
+    base-url: <ctfd base url>
+    affiliation: <affiliation for new users>
+    email-template: |
+      {"text": "A new account has been created for you for {ctf-name} at {url}\n\nUsername: {name}\nPassword: {password}"}

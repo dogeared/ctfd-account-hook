@@ -8,15 +8,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CtfdUser {
 
-    private int id;
+    private Integer id;
     private String affiliation;
-    private boolean banned = false;
+    private Boolean banned = false;
     private String bracket;
     private String country;
     private String created;
     private String email;
     private String[] fields = new String[0];
-    private boolean hidden = false;
+    private Boolean hidden = false;
     private String language;
     private String name;
     @JsonProperty("oauth_id")
@@ -26,14 +26,14 @@ public class CtfdUser {
     @JsonProperty("team_id")
     private String teamId;
     private String type = "user";
-    private boolean verified = false;
+    private Boolean verified = false;
     private String website;
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -45,11 +45,11 @@ public class CtfdUser {
         this.affiliation = affiliation;
     }
 
-    public boolean isBanned() {
+    public Boolean getBanned() {
         return banned;
     }
 
-    public void setBanned(boolean banned) {
+    public void setBanned(Boolean banned) {
         this.banned = banned;
     }
 
@@ -93,11 +93,11 @@ public class CtfdUser {
         this.fields = fields;
     }
 
-    public boolean isHidden() {
+    public Boolean getHidden() {
         return hidden;
     }
 
-    public void setHidden(boolean hidden) {
+    public void setHidden(Boolean hidden) {
         this.hidden = hidden;
     }
 
@@ -157,11 +157,11 @@ public class CtfdUser {
         this.type = type;
     }
 
-    public boolean isVerified() {
+    public Boolean getVerified() {
         return verified;
     }
 
-    public void setVerified(boolean verified) {
+    public void setVerified(Boolean verified) {
         this.verified = verified;
     }
 

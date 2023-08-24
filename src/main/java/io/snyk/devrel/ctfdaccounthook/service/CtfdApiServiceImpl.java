@@ -104,7 +104,9 @@ public class CtfdApiServiceImpl implements CtfdApiService {
     public CtfdUserResponse updateUser(CtfdUser ctfdUser) {
         if (ctfdUser == null || ctfdUser.getId() == null) {
             log.debug("passed in CtfdUser is null or its id is null.");
-            return null;
+            CtfdApiErrorResponse error = new CtfdApiErrorResponse();
+            error.getErrors().setMessage("CtfdUser param must not be null");
+            throw new CtfdApiException(error);
         }
         ClientResponse res = this.webClient.patch().uri(API_URI + "/users/" + ctfdUser.getId())
             .body(BodyInserters.fromValue(ctfdUser))

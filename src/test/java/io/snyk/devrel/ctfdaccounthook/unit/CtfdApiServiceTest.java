@@ -3,6 +3,7 @@ package io.snyk.devrel.ctfdaccounthook.unit;
 import io.snyk.devrel.ctfdaccounthook.Exception.CtfdApiException;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdApiErrorResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserRequest;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdUser;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdUserResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdUserPaginatedResponse;
 import io.snyk.devrel.ctfdaccounthook.service.CtfdApiServiceImpl;
@@ -62,6 +63,9 @@ public class CtfdApiServiceTest {
         ReflectionTestUtils.setField(ctfdApiService, "ctfdApiToken", TOKEN_VALUE);
         ReflectionTestUtils.setField(ctfdApiService, "ctfdApiBaseUrl", BASE_URL);
         ReflectionTestUtils.setField(ctfdApiService, "affiliation", AFFILIATION);
+    }
+
+    public void generalSetup() {
         when(webClientBuilder.baseUrl(BASE_URL)).thenReturn(webClientBuilder);
         when(webClientBuilder.defaultHeader("Authorization", "Token " + TOKEN_VALUE))
             .thenReturn(webClientBuilder);
@@ -87,8 +91,17 @@ public class CtfdApiServiceTest {
         when(webClient.get()).thenReturn(reqHeaderUriSpec);
     }
 
+    public void setupPatchUser() {
+        WebClient.RequestBodyUriSpec reqUriSpec = Mockito.mock(WebClient.RequestBodyUriSpec.class);
+        when(webClient.patch()).thenReturn(reqUriSpec);
+        WebClient.RequestBodySpec reqBodySpec = Mockito.mock(WebClient.RequestBodySpec.class);
+        when(reqUriSpec.uri(API_URI + USERS_ENDPOINT + "/1")).thenReturn(reqBodySpec);
+        when(reqBodySpec.body(any())).thenReturn(reqHeaderSpec);
+    }
+
     @Test
     public void whenClientResponseIsOk_thenReturnCtfdCreateUserResponse() {
+        generalSetup();
         setupCreateUser();
         HttpStatusCode httpStatusCode = HttpStatus.OK;
         when(clientResponse.statusCode()).thenReturn(httpStatusCode);
@@ -103,6 +116,7 @@ public class CtfdApiServiceTest {
 
     @Test
     public void whenClientResponseIsNotOk_thenThrowCtfdApiException() {
+        generalSetup();
         setupCreateUser();
         HttpStatusCode httpStatusCode = HttpStatus.BAD_REQUEST;
         when(clientResponse.statusCode()).thenReturn(httpStatusCode);
@@ -120,6 +134,7 @@ public class CtfdApiServiceTest {
 
     @Test
     public void whenGetUsersByAffiliation_Default_Success() {
+        generalSetup();
         setupGetUsers();
         when(reqHeaderUriSpec.uri(API_URI + USERS_ENDPOINT + "?page=1&affiliation=" + AFFILIATION))
             .thenReturn(reqHeaderSpec);
@@ -135,6 +150,7 @@ public class CtfdApiServiceTest {
 
     @Test
     public void whenGetUsersByAffiliation_WithPage_Fail() {
+        generalSetup();
         setupGetUsers();
         when(reqHeaderUriSpec.uri(API_URI + USERS_ENDPOINT + "?page=" + PAGE + "&affiliation=" + AFFILIATION))
             .thenReturn(reqHeaderSpec);
@@ -149,5 +165,82 @@ public class CtfdApiServiceTest {
             assertThat(actual.getErrors().getMessage())
                 .isEqualTo("Unable to get page " + PAGE + " for affiliation: " + AFFILIATION);
         }
+    }
+
+    @Test
+    public void when_Patch_CtfdUser_IsNull_Fail() {
+        try {
+            ctfdApiService.updateUser(null);
+            fail();
+        } catch (CtfdApiException e) {
+            CtfdApiErrorResponse actual = e.getCtfdApiError();
+            assertThat(actual.getErrors().getMessage()).isEqualTo("CtfdUser param must not be null");
+        }
+    }
+
+    @Test
+    public void when_Patch_CtfdUser_Id_IsNull_Fail() {
+        try {
+            CtfdUser user = new CtfdUser();
+            assertThat(user.getId()).isNull();
+            ctfdApiService.updateUser(user);
+            fail();
+        } catch (CtfdApiException e) {
+            CtfdApiErrorResponse actual = e.getCtfdApiError();
+            assertThat(actual.getErrors().getMessage()).isEqualTo("CtfdUser param must not be null");
+        }
+    }
+
+    @Test
+    public void when_Patch_CtfdUser_Success() {
+        generalSetup();
+        setupPatchUser();
+        HttpStatusCode httpStatusCode = HttpStatus.OK;
+        when(clientResponse.statusCode()).thenReturn(httpStatusCode);
+        CtfdUserResponse expected = new CtfdUserResponse();
+        Mono<CtfdUserResponse> resMono = Mono.just(expected);
+        when(clientResponse.bodyToMono(CtfdUserResponse.class)).thenReturn(resMono);
+
+        CtfdUser ctfdUser = new CtfdUser();
+        ctfdUser.setId(1);
+        CtfdUserResponse actual = ctfdApiService.updateUser(ctfdUser);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void when_Patch_CtfdUser_Fail() {
+        generalSetup();
+        setupPatchUser();
+        HttpStatusCode httpStatusCode = HttpStatus.BAD_REQUEST;
+        when(clientResponse.statusCode()).thenReturn(httpStatusCode);
+        CtfdApiErrorResponse ctfdApiErrorResponse = new CtfdApiErrorResponse();
+        Mono<CtfdApiErrorResponse> expected = Mono.just(ctfdApiErrorResponse);
+        when(clientResponse.bodyToMono(CtfdApiErrorResponse.class)).thenReturn(expected);
+
+        CtfdUser ctfdUser = new CtfdUser();
+        ctfdUser.setId(1);
+        try {
+            ctfdApiService.updateUser(ctfdUser);
+            fail();
+        } catch (CtfdApiException actual) {
+            assertThat(actual.getCtfdApiError()).isEqualTo(expected.block());
+        }
+    }
+
+    @Test
+    public void whenUpdatePassword_Success() {
+        generalSetup();
+        setupPatchUser();
+        HttpStatusCode httpStatusCode = HttpStatus.OK;
+        when(clientResponse.statusCode()).thenReturn(httpStatusCode);
+        CtfdUserResponse ctfdUserResponse = new CtfdUserResponse();
+        Mono<CtfdUserResponse> resMono = Mono.just(ctfdUserResponse);
+        when(clientResponse.bodyToMono(CtfdUserResponse.class)).thenReturn(resMono);
+
+        CtfdUser ctfdUser = new CtfdUser();
+        ctfdUser.setId(1);
+        assertThat(ctfdUser.getPassword()).isNull();
+        CtfdUser actual = ctfdApiService.updatePassword(ctfdUser);
+        assertThat(actual.getPassword()).isNotEmpty();
     }
 }

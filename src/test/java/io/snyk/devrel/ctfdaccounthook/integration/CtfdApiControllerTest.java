@@ -6,6 +6,9 @@ import io.snyk.devrel.ctfdaccounthook.Exception.CtfdApiException;
 import io.snyk.devrel.ctfdaccounthook.controller.CtfdApiController;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdApiErrorResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdCreateUserRequest;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdMeta;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdUpdateAndEmailResponse;
+import io.snyk.devrel.ctfdaccounthook.model.CtfdUser;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdUserResponse;
 import io.snyk.devrel.ctfdaccounthook.model.CtfdUserPaginatedResponse;
 import io.snyk.devrel.ctfdaccounthook.service.AliasService;
@@ -13,6 +16,7 @@ import io.snyk.devrel.ctfdaccounthook.service.CtfdApiService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -59,9 +63,10 @@ public class CtfdApiControllerTest {
 
     private MockMvc mvc;
 
-    private static final String CTFD_USERS_ENDPOINT = "/api/v1/users";
-    private static final String SUCCESS = "success";
     public static final String AFFILIATION = "fetch";
+    private static final String CTFD_USERS_ENDPOINT = "/api/v1/users";
+    private static final String CTFD_EMAIL_ENDPOINT = "/api/v1/update-and-email/" + AFFILIATION;
+    private static final String SUCCESS = "success";
     public static final String HEADER = "X-TEST-HEADER";
     public static final String TOKEN_VALUE = "blerg";
 
@@ -287,7 +292,46 @@ public class CtfdApiControllerTest {
             .andExpect(status().isBadRequest()).andReturn().getResponse();
 
         CtfdApiErrorResponse actual =
-                mapper.readValue(response.getContentAsString(), CtfdApiErrorResponse.class);
+            mapper.readValue(response.getContentAsString(), CtfdApiErrorResponse.class);
         assertThat(actual.getErrors().getMessage()).isEqualTo(expected.getErrors().getMessage());
+    }
+
+    @Test
+    public void whenUpdateAndEmailUsers_Success() throws Exception {
+
+        CtfdUser ctfdUser = Mockito.mock(CtfdUser.class);
+        CtfdUser[] ctfdUsers = new CtfdUser[]{ctfdUser};
+
+        CtfdMeta.CtfdPagination ctfdPagination = new CtfdMeta.CtfdPagination();
+        ctfdPagination.setNext(null);
+        ctfdPagination.setPage(1);
+        ctfdPagination.setPages(1);
+        ctfdPagination.setPrev(1);
+        ctfdPagination.setTotal(1);
+        ctfdPagination.setPerPage(50);
+
+        CtfdMeta ctfdMeta = new CtfdMeta();
+        ctfdMeta.setPagination(ctfdPagination);
+
+        CtfdUserPaginatedResponse ctfdUserPaginatedResponse = new CtfdUserPaginatedResponse();
+        ctfdUserPaginatedResponse.setSuccess(SUCCESS);
+        ctfdUserPaginatedResponse.setData(ctfdUsers);
+        ctfdUserPaginatedResponse.setMeta(ctfdMeta);
+
+
+        when(ctfdApiService.getUsersByAffiliation(AFFILIATION, 1)).thenReturn(ctfdUserPaginatedResponse);
+        when(ctfdApiService.updatePassword(ctfdUser)).thenReturn(ctfdUser);
+        when(ctfdApiService.emailUser(ctfdUser)).thenReturn(Mockito.mock(CtfdUserResponse.class));
+
+        MockHttpServletResponse response = mvc.perform(
+            post(CTFD_EMAIL_ENDPOINT)
+                .header(HEADER, TOKEN_VALUE)
+                .contentType(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(status().isOk()).andReturn().getResponse();
+
+        CtfdUpdateAndEmailResponse actual =
+            mapper.readValue(response.getContentAsString(), CtfdUpdateAndEmailResponse.class);
+        assertThat(actual.getUsersProcessed()).isEqualTo(1);
     }
 }

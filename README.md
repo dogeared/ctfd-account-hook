@@ -72,7 +72,6 @@ user's credentials.
 
 The following environment variables are required to configure the service.
 
-```
 | Env Var                 | Example Value             | Description                                                                          |
 |-------------------------|---------------------------|--------------------------------------------------------------------------------------|
 | api.auth.header-name    | X-API-KEY                 | The header name used for authentication to the service                               |
@@ -84,4 +83,3 @@ The following environment variables are required to configure the service.
 | ctfd.api.base-url       | https://fetch2023.snyk.io | The base url for the CTFd instance                                                   |
 | ctfd.api.affiliation    | fetch2023                 | An affiliation value that will automatically be assigned to all new users            |
 | ctfd.api.email-template | {"text": "..."}           | A template used to send credential info to users                                     |
-```

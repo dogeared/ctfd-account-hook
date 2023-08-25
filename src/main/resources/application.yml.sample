@@ -1,6 +1,6 @@
 logging:
   level:
-    io.snyk.devrel: DEBUG
+    dev.dogeared: DEBUG
 api:
   auth:
     header-name: X-API-KEY

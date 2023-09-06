@@ -58,7 +58,7 @@ configurable based on the setting of the environment variable: `api.dictionary`.
 `CYBER` is the default dictionary in case `api.dictionary` is set to an invalid value or is null.
 
 The dictionaries used for all sections of an alias are defined in the 
-[src/main/java/dev/dogeared/ctfdaccounthook/service/AliasService](AliasService) interface.
+[AliasService](src/main/java/dev/dogeared/ctfdaccounthook/service/AliasService.java) interface.
 
 **NOTE**: The `affiliation` field for the user is automatically set based on the configuration. See below for more on
 configuration.

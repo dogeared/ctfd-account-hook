@@ -29,6 +29,7 @@ public class AliasServiceTest {
 
     @Test
     public void whenZeroIndexFromRandom_ThenExpectedAlias() {
+        aliasService.setup();
         String adjective = AliasService.ADJECTIVES_DICT[0];
         String color = AliasService.COLORS_DICT[0];
         String cyber = AliasService.CYBER_SECURITY_DICT[0];
@@ -40,5 +41,23 @@ public class AliasServiceTest {
         String alias = aliasService.getAlias();
 
         assertThat(alias).isEqualTo(String.format("%s-%s-%s", adjective, color, cyber));
+    }
+
+    @Test
+    public void whenZeroIndexFromRandom_WithDogs_ThenExpectedAlias() {
+        ReflectionTestUtils.setField(aliasService, "dictionary", AliasService.Dictionary.DOGS);
+        aliasService.setup();
+        String adjective = AliasService.ADJECTIVES_DICT[0];
+        String color = AliasService.COLORS_DICT[0];
+        String dog = AliasService.DOG_BREEDS_DICT[0];
+
+        when(random.nextInt(AliasService.ADJECTIVES_DICT.length)).thenReturn(0);
+        when(random.nextInt(AliasService.COLORS_DICT.length)).thenReturn(0);
+        when(random.nextInt(AliasService.DOG_BREEDS_DICT.length)).thenReturn(0);
+
+
+        String alias = aliasService.getAlias();
+
+        assertThat(alias).isEqualTo(String.format("%s-%s-%s", adjective, color, dog));
     }
 }

@@ -44,8 +44,21 @@ http POST https://my-ctfd-account-hook.server/api/v1/users \
 The created user will have a CTFd `Name` assigned to them. This `Name` has the following format:
 
 ```
-<adjective>-<color>-<cyber security term>
+<adjective>-<color>-<configured dictionary term>
 ```
+
+The first two sections of the alias are always an adjective and a color, respectively. The third section is
+configurable based on the setting of the environment variable: `api.dictionary`. Valid values are:
+
+| api.dictionary | Description          |
+|----------------|----------------------|
+| CYBER          | cyber security terms |
+| DOGS           | dog breeds           |
+
+`CYBER` is the default dictionary in case `api.dictionary` is set to an invalid value or is null.
+
+The dictionaries used for all sections of an alias are defined in the 
+[src/main/java/dev/dogeared/ctfdaccounthook/service/AliasService](AliasService) interface.
 
 **NOTE**: The `affiliation` field for the user is automatically set based on the configuration. See below for more on
 configuration.
@@ -76,6 +89,7 @@ The following environment variables are required to configure the service.
 |-------------------------|---------------------------|--------------------------------------------------------------------------------------|
 | api.auth.header-name    | X-API-KEY                 | The header name used for authentication to the service                               |
 | api.auth.token          | super-secret              | The shared secret used on every request of the service                               |
+| api.dictionary          | CYBER                     | Which dictionary to use for the alias. Valid values are: CYBER (default) or DOGS     | 
 | alias.retries           | 10                        | Number of retries for auto-generated alias. Must be unique within the CTFd instance. |
 | ctfd.info.name          | Fetch 2023                | The event name                                                                       |
 | ctfd.info.url           | https://fetch2023.snyk.io | The url for the event                                                                |

@@ -16,6 +16,8 @@
     <properties>
         <java.version>17</java.version>
         <jacoco.version>0.8.10</jacoco.version>
+        <tomcat.version>10.1.13</tomcat.version>
+        <snakeyaml.version>2.0</snakeyaml.version>
     </properties>
     <dependencies>
         <dependency>
@@ -110,5 +112,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

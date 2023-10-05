@@ -5,6 +5,7 @@ import dev.dogeared.ctfdaccounthook.repository.ApiKeyRepository;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.UUID;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 public class ApiKeyServiceImpl implements ApiKeyService {
 
   private final ApiKeyRepository apiKeyRepository;
+  private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
   public ApiKeyServiceImpl(ApiKeyRepository apiKeyRepository) {
     this.apiKeyRepository = apiKeyRepository;
@@ -32,7 +34,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
   public ApiKey validateApiKey(String hashedKey) {
     ApiKey apiKey = apiKeyRepository.findByHashedKey(hashedKey);
     if (apiKey == null || apiKey.getExpirationDate().before(new Date()) || apiKey.isRevoked()) {
-      return null; // This can be changed to throw an exception if you want to be more explicit
+      throw new BadCredentialsException("Invalid or expired API Key");
     }
 
     return apiKey;
@@ -43,7 +45,6 @@ public class ApiKeyServiceImpl implements ApiKeyService {
   }
 
   private String hashAndSalt(String rawApiKey) {
-    BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
     return encoder.encode(rawApiKey);
   }
 

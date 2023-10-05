@@ -6,6 +6,7 @@ import java.util.UUID;
 public class ApiKey {
 
   private UUID id;
+  private String description;
   private String hashedKey;
   private Date expirationDate;
   private boolean isRevoked;
@@ -16,6 +17,14 @@ public class ApiKey {
 
   public void setId(UUID id) {
     this.id = id;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
   }
 
   public String getHashedKey() {

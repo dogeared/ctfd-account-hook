@@ -17,6 +17,7 @@ public class ApiKeyAuthenticationServiceImpl implements ApiKeyAuthenticationServ
   private String apiAuthHeaderName;
 
   private final ApiKeyService apiKeyService;
+  private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
   public ApiKeyAuthenticationServiceImpl(ApiKeyService apiKeyService) {
     this.apiKeyService = apiKeyService;
@@ -36,7 +37,6 @@ public class ApiKeyAuthenticationServiceImpl implements ApiKeyAuthenticationServ
     }
 
     //Checks the raw API key against the hashed version in the database
-    BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
     if (!encoder.matches(apiKey, storedKey.getHashedKey())) {
       throw new BadCredentialsException("Invalid API Key");
     }

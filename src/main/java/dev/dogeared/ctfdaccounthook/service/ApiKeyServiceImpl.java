@@ -20,12 +20,12 @@ public class ApiKeyServiceImpl implements ApiKeyService {
   }
 
   @Override
-  public ApiKey generateApiKey() {
+  public ApiKey generateApiKey(int expirationDays) {
     ApiKey apiKey = new ApiKey();
     apiKey.setId(UUID.randomUUID());
     String rawKey = generateRawApiKey();
     apiKey.setHashedKey(hashAndSalt(rawKey));
-    apiKey.setExpirationDate(calculateExpirationDate());
+    apiKey.setExpirationDate(calculateExpirationDate(expirationDays));
     apiKey.setIsRevoked(false);
     return apiKeyRepository.save(apiKey);
   }
@@ -48,9 +48,9 @@ public class ApiKeyServiceImpl implements ApiKeyService {
     return encoder.encode(rawApiKey);
   }
 
-  private Date calculateExpirationDate() {
+  private Date calculateExpirationDate(int days) {
     Calendar calendar = Calendar.getInstance();
-    calendar.add(Calendar.DAY_OF_MONTH, 30); //Adds 30 days to the current date
+    calendar.add(Calendar.DAY_OF_MONTH, days);
     return calendar.getTime();
   }
 }

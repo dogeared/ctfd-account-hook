@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.BadCredentialsException;
 
 import java.util.Date;
 
@@ -16,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class ApiKeyServiceImplTest {
+class ApiKeyServiceTest {
 
   @Mock
   private ApiKeyRepository apiKeyRepository;
@@ -33,7 +34,7 @@ class ApiKeyServiceImplTest {
     ApiKey savedApiKey = new ApiKey();
     when(apiKeyRepository.save(any(ApiKey.class))).thenReturn(savedApiKey);
 
-    ApiKey result = apiKeyService.generateApiKey();
+    ApiKey result = apiKeyService.generateApiKey(30);
 
     assertEquals(savedApiKey, result);
   }
@@ -59,9 +60,8 @@ class ApiKeyServiceImplTest {
 
     when(apiKeyRepository.findByHashedKey(anyString())).thenReturn(storedApiKey);
 
-    ApiKey result = apiKeyService.validateApiKey("someHashedKey");
-
-    assertNull(result);
+    assertThrows(BadCredentialsException.class,
+        () -> apiKeyService.validateApiKey("someHashedKey"));
   }
 
   @Test
@@ -72,17 +72,15 @@ class ApiKeyServiceImplTest {
 
     when(apiKeyRepository.findByHashedKey(anyString())).thenReturn(storedApiKey);
 
-    ApiKey result = apiKeyService.validateApiKey("someHashedKey");
-
-    assertNull(result);
+    assertThrows(BadCredentialsException.class,
+        () -> apiKeyService.validateApiKey("someHashedKey"));
   }
 
   @Test
   void testValidateNonExistentApiKey() {
     when(apiKeyRepository.findByHashedKey(anyString())).thenReturn(null);
 
-    ApiKey result = apiKeyService.validateApiKey("someHashedKey");
-
-    assertNull(result);
+    assertThrows(BadCredentialsException.class,
+        () -> apiKeyService.validateApiKey("someHashedKey"));
   }
 }

@@ -4,6 +4,6 @@ import dev.dogeared.ctfdaccounthook.model.ApiKey;
 
 public interface ApiKeyService {
 
-  ApiKey generateApiKey();
+  ApiKey generateApiKey(int expirationDays);
   ApiKey validateApiKey(String hashedKey);
 }

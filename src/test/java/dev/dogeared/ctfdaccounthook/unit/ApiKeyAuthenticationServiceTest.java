@@ -59,11 +59,9 @@ class ApiKeyAuthenticationServiceTest {
 
   @Test
   void testInvalidApiKey() {
-    ApiKey apiKey = new ApiKey();
-    apiKey.setHashedKey(HASHED_API_KEY);
-
     when(request.getHeader("api-key-header")).thenReturn("wrongApiKey");
-    when(apiKeyService.validateApiKey("wrongApiKey")).thenReturn(apiKey);
+    when(apiKeyService.validateApiKey("wrongApiKey"))
+          .thenThrow(new BadCredentialsException("Invalid API Key"));
 
     assertThrows(BadCredentialsException.class,
         () -> apiKeyAuthenticationService.getAuthentication(request), "Invalid API Key");

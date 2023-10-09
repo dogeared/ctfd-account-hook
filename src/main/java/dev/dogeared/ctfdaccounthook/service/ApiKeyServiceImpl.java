@@ -4,7 +4,6 @@ import dev.dogeared.ctfdaccounthook.model.ApiKey;
 import dev.dogeared.ctfdaccounthook.repository.ApiKeyRepository;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;

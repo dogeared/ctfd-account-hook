@@ -1,6 +1,8 @@
 package dev.dogeared.ctfdaccounthook.integration;
 
 import dev.dogeared.ctfdaccounthook.CtfdAccountHookApplication;
+import dev.dogeared.ctfdaccounthook.model.ApiKey;
+import dev.dogeared.ctfdaccounthook.service.ApiKeyService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(classes = CtfdAccountHookApplication.class)
-@TestPropertySource(properties = {"api.auth.header-name=" + HEADER,"api.auth.token=" + TOKEN_VALUE})
+@TestPropertySource(properties = {"api.auth.header-name=" + HEADER})
 public class SecurityFilterChainIntegrationTest {
 
     private static final String HELLO_ENDPOINT = "/hello-world";
@@ -26,6 +28,9 @@ public class SecurityFilterChainIntegrationTest {
 
     @Autowired
     private WebApplicationContext context;
+
+    @Autowired
+    private ApiKeyService apiKeyService;
 
     private MockMvc mvc;
 
@@ -44,6 +49,7 @@ public class SecurityFilterChainIntegrationTest {
 
     @Test
     public void whenValidApiKeyAnyEndpoint_thenAuthorized() throws Exception {
+        apiKeyService.generateApiKey(TOKEN_VALUE, 1);
         mvc.perform(get(HELLO_ENDPOINT).header(HEADER, TOKEN_VALUE))
             .andExpect(status().isOk());
     }

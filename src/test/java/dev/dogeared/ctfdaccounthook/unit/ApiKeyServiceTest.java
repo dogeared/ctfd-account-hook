@@ -10,8 +10,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.Date;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -41,11 +43,14 @@ class ApiKeyServiceTest {
 
   @Test
   void testValidateValidApiKey() {
+    BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
     ApiKey storedApiKey = new ApiKey();
+    storedApiKey.setHashedKey(encoder.encode("someHashedKey"));
     storedApiKey.setExpirationDate(new Date(System.currentTimeMillis() + 1000000)); // Future date
     storedApiKey.setIsRevoked(false);
 
-    when(apiKeyRepository.findByHashedKey(anyString())).thenReturn(storedApiKey);
+    List<ApiKey> apiKeys = List.of(storedApiKey);
+    when(apiKeyRepository.findAll()).thenReturn(apiKeys);
 
     ApiKey result = apiKeyService.validateApiKey("someHashedKey");
 
@@ -57,8 +62,9 @@ class ApiKeyServiceTest {
     ApiKey storedApiKey = new ApiKey();
     storedApiKey.setExpirationDate(new Date(System.currentTimeMillis() - 1000000)); // Past date
     storedApiKey.setIsRevoked(false);
+    List<ApiKey> apiKeys = List.of(storedApiKey);
 
-    when(apiKeyRepository.findByHashedKey(anyString())).thenReturn(storedApiKey);
+    when(apiKeyRepository.findAll()).thenReturn(apiKeys);
 
     assertThrows(BadCredentialsException.class,
         () -> apiKeyService.validateApiKey("someHashedKey"));
@@ -69,8 +75,9 @@ class ApiKeyServiceTest {
     ApiKey storedApiKey = new ApiKey();
     storedApiKey.setExpirationDate(new Date(System.currentTimeMillis() + 1000000)); // Future date
     storedApiKey.setIsRevoked(true);
+    List<ApiKey> apiKeys = List.of(storedApiKey);
 
-    when(apiKeyRepository.findByHashedKey(anyString())).thenReturn(storedApiKey);
+    when(apiKeyRepository.findAll()).thenReturn(apiKeys);
 
     assertThrows(BadCredentialsException.class,
         () -> apiKeyService.validateApiKey("someHashedKey"));
@@ -78,8 +85,6 @@ class ApiKeyServiceTest {
 
   @Test
   void testValidateNonExistentApiKey() {
-    when(apiKeyRepository.findByHashedKey(anyString())).thenReturn(null);
-
     assertThrows(BadCredentialsException.class,
         () -> apiKeyService.validateApiKey("someHashedKey"));
   }

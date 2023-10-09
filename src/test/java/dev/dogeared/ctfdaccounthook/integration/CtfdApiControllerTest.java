@@ -12,6 +12,7 @@ import dev.dogeared.ctfdaccounthook.model.CtfdUser;
 import dev.dogeared.ctfdaccounthook.model.CtfdUserPaginatedResponse;
 import dev.dogeared.ctfdaccounthook.model.CtfdUserResponse;
 import dev.dogeared.ctfdaccounthook.service.AliasService;
+import dev.dogeared.ctfdaccounthook.service.ApiKeyService;
 import dev.dogeared.ctfdaccounthook.service.CtfdApiService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,7 +30,6 @@ import org.springframework.web.context.WebApplicationContext;
 
 import static dev.dogeared.ctfdaccounthook.integration.CtfdApiControllerTest.AFFILIATION;
 import static dev.dogeared.ctfdaccounthook.integration.CtfdApiControllerTest.HEADER;
-import static dev.dogeared.ctfdaccounthook.integration.CtfdApiControllerTest.TOKEN_VALUE;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -41,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(classes = CtfdAccountHookApplication.class)
 @TestPropertySource(properties = {
-    "api.auth.header-name=" + HEADER, "api.auth.token=" + TOKEN_VALUE,
+    "api.auth.header-name=" + HEADER,
     "alias.retries=1", "ctfd.api.affiliation=" + AFFILIATION
 })
 public class CtfdApiControllerTest {
@@ -57,6 +57,9 @@ public class CtfdApiControllerTest {
 
     @Autowired
     private WebApplicationContext context;
+
+    @Autowired
+    private ApiKeyService apiKeyService;
 
     @Autowired
     ObjectMapper mapper;
@@ -75,6 +78,7 @@ public class CtfdApiControllerTest {
         mvc = MockMvcBuilders.webAppContextSetup(context)
             .apply(springSecurity())
             .build();
+        apiKeyService.generateApiKey(TOKEN_VALUE, 1);
     }
 
     @Test

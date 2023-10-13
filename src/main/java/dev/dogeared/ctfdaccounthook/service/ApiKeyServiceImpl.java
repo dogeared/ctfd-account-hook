@@ -1,6 +1,6 @@
 package dev.dogeared.ctfdaccounthook.service;
 
-import dev.dogeared.ctfdaccounthook.model.ApiKey;
+import dev.dogeared.ctfdaccounthook.model.entity.ApiKey;
 import dev.dogeared.ctfdaccounthook.repository.ApiKeyRepository;
 import java.util.Calendar;
 import java.util.Date;

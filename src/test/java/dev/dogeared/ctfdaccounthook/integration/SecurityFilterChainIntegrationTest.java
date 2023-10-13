@@ -1,7 +1,6 @@
 package dev.dogeared.ctfdaccounthook.integration;
 
 import dev.dogeared.ctfdaccounthook.CtfdAccountHookApplication;
-import dev.dogeared.ctfdaccounthook.model.ApiKey;
 import dev.dogeared.ctfdaccounthook.service.ApiKeyService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,7 +12,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import static dev.dogeared.ctfdaccounthook.integration.SecurityFilterChainIntegrationTest.HEADER;
-import static dev.dogeared.ctfdaccounthook.integration.SecurityFilterChainIntegrationTest.TOKEN_VALUE;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;

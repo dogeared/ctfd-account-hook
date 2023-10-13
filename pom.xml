@@ -76,7 +76,7 @@
                 <version>${jacoco.version}</version>
                 <configuration>
                     <excludes>
-                        <exclude>**/model/*</exclude>
+                        <exclude>**/model/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>

@@ -1,13 +1,12 @@
 package dev.dogeared.ctfdaccounthook.service;
 
-import dev.dogeared.ctfdaccounthook.model.ApiKey;
+import dev.dogeared.ctfdaccounthook.model.entity.ApiKey;
 import dev.dogeared.ctfdaccounthook.model.ApiKeyAuthentication;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service

@@ -1,6 +1,6 @@
 package dev.dogeared.ctfdaccounthook.unit;
 
-import dev.dogeared.ctfdaccounthook.model.ApiKey;
+import dev.dogeared.ctfdaccounthook.model.entity.ApiKey;
 import dev.dogeared.ctfdaccounthook.service.ApiKeyAuthenticationServiceImpl;
 import dev.dogeared.ctfdaccounthook.service.ApiKeyService;
 import jakarta.servlet.http.HttpServletRequest;

@@ -1,6 +1,6 @@
 package dev.dogeared.ctfdaccounthook.service;
 
-import dev.dogeared.ctfdaccounthook.model.ApiKey;
+import dev.dogeared.ctfdaccounthook.model.entity.ApiKey;
 
 public interface ApiKeyService {
 

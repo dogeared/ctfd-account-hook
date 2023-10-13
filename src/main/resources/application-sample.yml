@@ -1,3 +1,12 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://<host>:<port>/<database>
+    username: <username>
+    password: <password>
 logging:
   level:
     dev.dogeared: DEBUG

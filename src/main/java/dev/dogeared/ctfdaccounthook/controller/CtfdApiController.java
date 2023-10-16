@@ -1,6 +1,7 @@
 package dev.dogeared.ctfdaccounthook.controller;
 
 import dev.dogeared.ctfdaccounthook.Exception.CtfdApiException;
+import dev.dogeared.ctfdaccounthook.annotation.LogExecutionTime;
 import dev.dogeared.ctfdaccounthook.model.CtfdApiErrorResponse;
 import dev.dogeared.ctfdaccounthook.model.CtfdCreateUserRequest;
 import dev.dogeared.ctfdaccounthook.model.CtfdResponse;
@@ -75,6 +76,7 @@ public class CtfdApiController {
     }
 
     @PostMapping("/api/v1/update-and-email/{affiliation}")
+    @LogExecutionTime
     public CtfdResponse updateAndEmailUsers(@PathVariable String affiliation, HttpServletResponse res) {
         Integer page = 1;
         int processed = 0;

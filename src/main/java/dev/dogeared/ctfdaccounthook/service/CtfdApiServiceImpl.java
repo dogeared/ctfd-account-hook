@@ -43,6 +43,13 @@ public class CtfdApiServiceImpl implements CtfdApiService {
     @Value("#{ @environment['ctfd.info.url'] }")
     private String ctfdUrl;
 
+    @Value("#{ @environment['ctfd.api.max-attempts'] ?: 2 }")
+    private Integer maxAttempts;
+
+    @Value("#{ @environment['ctfd.api.backoff-seconds'] ?: 60 }")
+    private Integer backoffSeconds;
+
+
     private final WebClient.Builder webClientBuilder;
     private WebClient webClient;
 
@@ -63,11 +70,13 @@ public class CtfdApiServiceImpl implements CtfdApiService {
             .defaultHeader("Authorization", "Token " + ctfdApiToken)
             .defaultHeader("Content-Type", "application/json")
             .build();
-        this.retryBackoffSpec = Retry.backoff(2, Duration.ofSeconds(60))
+        this.retryBackoffSpec = Retry.backoff(maxAttempts, Duration.ofSeconds(backoffSeconds))
             .filter(this::isTooManyRequestsException)
-            .doBeforeRetry(
-                retrySignal -> log.debug("Retrying after exception: {}", retrySignal.failure().getLocalizedMessage())
-            )
+            .doBeforeRetry(retrySignal -> log.debug(
+                "Waiting {} seconds. Retry #{} of {} after exception: {}",
+                backoffSeconds, (retrySignal.totalRetriesInARow()+1), maxAttempts,
+                retrySignal.failure().getLocalizedMessage()
+            ))
             .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> retrySignal.failure());
     }
 

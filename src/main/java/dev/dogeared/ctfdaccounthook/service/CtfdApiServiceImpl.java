@@ -1,5 +1,6 @@
 package dev.dogeared.ctfdaccounthook.service;
 
+import dev.dogeared.ctfdaccounthook.annotation.LogExecutionTime;
 import dev.dogeared.ctfdaccounthook.model.CtfdCreateUserRequest;
 import dev.dogeared.ctfdaccounthook.Exception.CtfdApiException;
 import dev.dogeared.ctfdaccounthook.model.CtfdApiErrorResponse;

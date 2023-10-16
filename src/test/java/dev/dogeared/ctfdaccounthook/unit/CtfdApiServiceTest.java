@@ -83,6 +83,8 @@ public class CtfdApiServiceTest {
         ReflectionTestUtils.setField(ctfdApiService, "emailTemplate", EMAIL_TEMPLATE);
         ReflectionTestUtils.setField(ctfdApiService, "ctfdName", CTFD_NAME);
         ReflectionTestUtils.setField(ctfdApiService, "ctfdUrl", CTFD_URL);
+        ReflectionTestUtils.setField(ctfdApiService, "maxAttempts", 2);
+        ReflectionTestUtils.setField(ctfdApiService, "backoffSeconds", 60);
     }
 
     public void generalSetup() {

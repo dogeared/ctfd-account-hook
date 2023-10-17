@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Mono;
 
 import static dev.dogeared.ctfdaccounthook.service.CtfdApiServiceImpl.API_URI;
@@ -312,4 +313,25 @@ public class CtfdApiServiceTest {
         CtfdUserResponse actual = ctfdApiService.emailUser(ctfdUser);
         assertThat(actual).isEqualTo(expected);
     }
+
+//    @Test
+//    public void t() {
+//        generalSetup();
+//        exchangeSetup();
+//        setupGetUsers();
+//        when(reqHeaderUriSpec.uri(API_URI + USERS_ENDPOINT + "?page=1&affiliation=" + AFFILIATION))
+//            .thenReturn(reqHeaderSpec);
+//        HttpStatusCode httpStatusCode = HttpStatus.OK;
+//        when(clientResponse.statusCode()).thenReturn(httpStatusCode);
+//        // TODO - need to add or mock values here
+//        CtfdUserPaginatedResponse expected = new CtfdUserPaginatedResponse();
+//        Mono<CtfdUserPaginatedResponse> resMono = Mono.just(expected);
+//        when(clientResponse.bodyToMono(CtfdUserPaginatedResponse.class)).thenReturn(resMono);
+//
+//        SseEmitter mockSse = mock(SseEmitter.class);
+//
+//        ctfdApiService.updateAndEmail(mockSse, AFFILIATION);
+//
+//
+//    }
 }

@@ -1,26 +1,31 @@
 package dev.dogeared.ctfdaccounthook.service;
 
-import dev.dogeared.ctfdaccounthook.annotation.LogExecutionTime;
-import dev.dogeared.ctfdaccounthook.model.CtfdCreateUserRequest;
 import dev.dogeared.ctfdaccounthook.Exception.CtfdApiException;
+import dev.dogeared.ctfdaccounthook.annotation.LogExecutionTime;
 import dev.dogeared.ctfdaccounthook.model.CtfdApiErrorResponse;
-import dev.dogeared.ctfdaccounthook.model.CtfdUserResponse;
+import dev.dogeared.ctfdaccounthook.model.CtfdCreateUserRequest;
+import dev.dogeared.ctfdaccounthook.model.CtfdUpdateAndEmailResponse;
 import dev.dogeared.ctfdaccounthook.model.CtfdUser;
 import dev.dogeared.ctfdaccounthook.model.CtfdUserPaginatedResponse;
+import dev.dogeared.ctfdaccounthook.model.CtfdUserResponse;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
 
+import java.io.IOException;
 import java.time.Duration;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Service
@@ -50,6 +55,8 @@ public class CtfdApiServiceImpl implements CtfdApiService {
     @Value("#{ @environment['ctfd.api.backoff-seconds'] ?: 60 }")
     private Integer backoffSeconds;
 
+    @Value("#{ @environment['ctfd.api.notify-override'] ?: false }")
+    private Boolean notifyOverride;
 
     private final WebClient.Builder webClientBuilder;
     private WebClient webClient;
@@ -58,6 +65,7 @@ public class CtfdApiServiceImpl implements CtfdApiService {
 
     private static final Logger log = LoggerFactory.getLogger(CtfdApiServiceImpl.class);
 
+    @Autowired
     public CtfdApiServiceImpl(WebClient.Builder webClientBuilder) {
         this.webClientBuilder = webClientBuilder;
     }
@@ -72,7 +80,6 @@ public class CtfdApiServiceImpl implements CtfdApiService {
             .defaultHeader("Content-Type", "application/json")
             .build();
         this.retryBackoffSpec = Retry.backoff(maxAttempts, Duration.ofSeconds(backoffSeconds))
-            .filter(this::isTooManyRequestsException)
             .doBeforeRetry(retrySignal -> log.debug(
                 "Waiting {} seconds. Retry #{} of {} after exception: {}",
                 backoffSeconds, (retrySignal.totalRetriesInARow()+1), maxAttempts,
@@ -88,12 +95,14 @@ public class CtfdApiServiceImpl implements CtfdApiService {
         ctfdUser.setName(alias);
         ctfdUser.setPassword(UUID.randomUUID().toString());
         ctfdUser.setAffiliation(affiliation);
-        String uri = API_URI + "/users" + (req.getNotify()?"?notify=true":"");
+        String notify = (notifyOverride || req.getNotify()) ? "?notify=true" : "";
+        String uri = API_URI + "/users" + notify;
         ClientResponse res = this.webClient.post().uri(uri)
             .body(BodyInserters.fromValue(ctfdUser))
             .exchange()
             .block();
         if (res.statusCode().is2xxSuccessful()) {
+            log.debug("Created new user with alias: {}. Notify is: {}", alias, (notifyOverride || req.getNotify()));
             return res.bodyToMono(CtfdUserResponse.class).block();
         }
         CtfdApiErrorResponse error = res.bodyToMono(CtfdApiErrorResponse.class).block();
@@ -117,6 +126,74 @@ public class CtfdApiServiceImpl implements CtfdApiService {
         error.getErrors().setMessage(String.format("Unable to get page %d for affiliation: %s", page, affiliation));
         throw new CtfdApiException(error);
     }
+
+    @Async
+    @Override
+    @LogExecutionTime
+    public void updateAndEmail(SseEmitter emitter, String affiliation) {
+        Integer page = 1;
+        int processed = 0;
+
+        do {
+            try {
+                CtfdUserPaginatedResponse ctfdUserResponse =
+                    getUsersByAffiliation(affiliation, page);
+                for (CtfdUser ctfdUser : ctfdUserResponse.getData()) {
+                    SseEmitter.SseEventBuilder  event = SseEmitter.event()
+                        .data("Processing - " + ctfdUser.getId() + " - " + LocalTime.now().toString())
+                        .id(String.valueOf(ctfdUser.getId()))
+                        .name(ctfdUser.getId() + " - " + ctfdUser.getName());
+                    emitter.send(event);
+
+                    log.debug("Processing user id: {}, name: {}", ctfdUser.getId(), ctfdUser.getName());
+                    ctfdUser = updatePassword(ctfdUser);
+                    log.debug("Password updated for user id: {}", ctfdUser.getId());
+                    emailUser(ctfdUser);
+                    log.debug("Email sent for user id: {}", ctfdUser.getId());
+
+                    event = SseEmitter.event()
+                        .data("Finished Processing - " + ctfdUser.getId() + " - " + LocalTime.now().toString())
+                        .id(String.valueOf(ctfdUser.getId()))
+                        .name(ctfdUser.getId() + " - " + ctfdUser.getName());
+                    emitter.send(event);
+                }
+                page = ctfdUserResponse.getMeta().getPagination().getNext();
+                processed += ctfdUserResponse.getData().length;
+
+                String processedMessage = "Processed a total of: " + processed + " users.";
+                if (page != null) {
+                    processedMessage += " Going to page " + page + " of users.";
+                }
+                emitter.send(processedMessage);
+            } catch (CtfdApiException | IOException e) {
+                log.error("Failure while update/email operation: {}", e.getMessage());
+                emitter.completeWithError(e);
+                return;
+            }
+        } while (page != null);
+        try {
+            emitter.send(new CtfdUpdateAndEmailResponse(processed));
+            emitter.complete();
+        } catch (IOException e) {
+            log.error("Emitter send failed: {}", e.getMessage());
+            emitter.completeWithError(e);
+        }
+    }
+
+    // TODO - gross - heroku workaround
+    @Async
+    @Override
+    public void emitterHeartBeat(SseEmitter emitter) {
+        try {
+            do {
+                emitter.send("beat");
+                Thread.sleep(5000);
+            } while (true);
+        } catch (Exception e) {
+            log.debug("exception during emitter: {}", e.getMessage());
+        }
+    }
+
 
     @Override
     public CtfdUserResponse updateUser(CtfdUser ctfdUser) {
@@ -170,9 +247,5 @@ public class CtfdApiServiceImpl implements CtfdApiService {
 
     public RetryBackoffSpec getRetryBackoffSpec() {
         return retryBackoffSpec;
-    }
-
-    private boolean isTooManyRequestsException(final Throwable throwable) {
-        return throwable instanceof WebClientResponseException.TooManyRequests;
     }
 }

@@ -1,13 +1,9 @@
 package dev.dogeared.ctfdaccounthook.controller;
 
 import dev.dogeared.ctfdaccounthook.Exception.CtfdApiException;
-import dev.dogeared.ctfdaccounthook.annotation.LogExecutionTime;
 import dev.dogeared.ctfdaccounthook.model.CtfdApiErrorResponse;
 import dev.dogeared.ctfdaccounthook.model.CtfdCreateUserRequest;
 import dev.dogeared.ctfdaccounthook.model.CtfdResponse;
-import dev.dogeared.ctfdaccounthook.model.CtfdUpdateAndEmailResponse;
-import dev.dogeared.ctfdaccounthook.model.CtfdUser;
-import dev.dogeared.ctfdaccounthook.model.CtfdUserPaginatedResponse;
 import dev.dogeared.ctfdaccounthook.service.AliasService;
 import dev.dogeared.ctfdaccounthook.service.CtfdApiService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -15,12 +11,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 public class CtfdApiController {
@@ -76,28 +74,11 @@ public class CtfdApiController {
     }
 
     @PostMapping("/api/v1/update-and-email/{affiliation}")
-    @LogExecutionTime
-    public CtfdResponse updateAndEmailUsers(@PathVariable String affiliation, HttpServletResponse res) {
-        Integer page = 1;
-        int processed = 0;
-        do {
-            try {
-                CtfdUserPaginatedResponse ctfdUserResponse =
-                    ctfdApiService.getUsersByAffiliation(affiliation, page);
-                for (CtfdUser ctfdUser : ctfdUserResponse.getData()) {
-                    log.debug("Processing user id: {}, name: {}", ctfdUser.getId(), ctfdUser.getName());
-                    ctfdUser = ctfdApiService.updatePassword(ctfdUser);
-                    log.debug("Password updated for user id: {}", ctfdUser.getId());
-                    ctfdApiService.emailUser(ctfdUser);
-                    log.debug("Email sent for user id: {}", ctfdUser.getId());
-                }
-                page = ctfdUserResponse.getMeta().getPagination().getNext();
-                processed += ctfdUserResponse.getData().length;
-            } catch (CtfdApiException e) {
-                res.setStatus(HttpStatus.BAD_REQUEST.value());
-                return e.getCtfdApiError();
-            }
-        } while (page != null);
-        return new CtfdUpdateAndEmailResponse(processed);
+    public SseEmitter updateAndEmailUsers(@PathVariable String affiliation, HttpServletResponse res) {
+        // TODO - should probs be another env var setting
+        SseEmitter emitter = new SseEmitter(1000*60*60*24L);
+        ctfdApiService.emitterHeartBeat(emitter);
+        ctfdApiService.updateAndEmail(emitter, affiliation);
+        return emitter;
     }
 }

@@ -25,6 +25,8 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -35,9 +37,11 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 
 @SpringBootTest(classes = CtfdAccountHookApplication.class)
 @TestPropertySource(properties = {
@@ -302,31 +306,6 @@ public class CtfdApiControllerTest {
 
     @Test
     public void whenUpdateAndEmailUsers_Success() throws Exception {
-
-        CtfdUser ctfdUser = Mockito.mock(CtfdUser.class);
-        CtfdUser[] ctfdUsers = new CtfdUser[]{ctfdUser};
-
-        CtfdMeta.CtfdPagination ctfdPagination = new CtfdMeta.CtfdPagination();
-        ctfdPagination.setNext(null);
-        ctfdPagination.setPage(1);
-        ctfdPagination.setPages(1);
-        ctfdPagination.setPrev(1);
-        ctfdPagination.setTotal(1);
-        ctfdPagination.setPerPage(50);
-
-        CtfdMeta ctfdMeta = new CtfdMeta();
-        ctfdMeta.setPagination(ctfdPagination);
-
-        CtfdUserPaginatedResponse ctfdUserPaginatedResponse = new CtfdUserPaginatedResponse();
-        ctfdUserPaginatedResponse.setSuccess(SUCCESS);
-        ctfdUserPaginatedResponse.setData(ctfdUsers);
-        ctfdUserPaginatedResponse.setMeta(ctfdMeta);
-
-
-        when(ctfdApiService.getUsersByAffiliation(AFFILIATION, 1)).thenReturn(ctfdUserPaginatedResponse);
-        when(ctfdApiService.updatePassword(ctfdUser)).thenReturn(ctfdUser);
-        when(ctfdApiService.emailUser(ctfdUser)).thenReturn(Mockito.mock(CtfdUserResponse.class));
-
         MockHttpServletResponse response = mvc.perform(
             post(CTFD_EMAIL_ENDPOINT)
                 .header(HEADER, TOKEN_VALUE)
@@ -334,35 +313,5 @@ public class CtfdApiControllerTest {
             )
             .andExpect(status().isOk()).andReturn().getResponse();
 
-        CtfdUpdateAndEmailResponse actual =
-            mapper.readValue(response.getContentAsString(), CtfdUpdateAndEmailResponse.class);
-        assertThat(actual.getUsersProcessed()).isEqualTo(1);
-    }
-
-    @Test
-    public void whenUpdateAndEmailUsers_Fail() throws Exception {
-        String errorString = String.format("""
-        {
-            "errors": {
-                "message": "Unable to get page 1 for affiliation: %s"
-            }
-        }
-        """, AFFILIATION);
-
-        CtfdApiErrorResponse expected = mapper.readValue(errorString, CtfdApiErrorResponse.class);
-        CtfdApiException exception = new CtfdApiException(expected);
-
-        when(ctfdApiService.getUsersByAffiliation(AFFILIATION, 1)).thenThrow(exception);
-
-        MockHttpServletResponse response = mvc.perform(
-            post(CTFD_EMAIL_ENDPOINT)
-                .header(HEADER, TOKEN_VALUE)
-                .contentType(MediaType.APPLICATION_JSON)
-            )
-            .andExpect(status().isBadRequest()).andReturn().getResponse();
-
-        CtfdApiErrorResponse actual =
-            mapper.readValue(response.getContentAsString(), CtfdApiErrorResponse.class);
-        assertThat(actual.getErrors().getMessage()).isEqualTo(expected.getErrors().getMessage());
     }
 }

@@ -365,6 +365,7 @@ public class CtfdApiServiceTest {
         ctfdApiService.updateAndEmail(emitter, AFFILIATION);
 
         verify(emitter, times(2)).send(any(SseEmitter.SseEventBuilder.class));
+        verify(emitter, times(1)).send(any(String.class));
         verify(emitter, times(1)).send(any(CtfdUpdateAndEmailResponse.class));
     }
 }

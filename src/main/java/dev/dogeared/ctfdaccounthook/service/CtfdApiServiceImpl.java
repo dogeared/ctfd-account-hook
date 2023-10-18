@@ -159,6 +159,12 @@ public class CtfdApiServiceImpl implements CtfdApiService {
                 }
                 page = ctfdUserResponse.getMeta().getPagination().getNext();
                 processed += ctfdUserResponse.getData().length;
+
+                String processedMessage = "Processed a total of: " + processed + " users.";
+                if (page != null) {
+                    processedMessage += " Going to page " + page + " of users.";
+                }
+                emitter.send(processedMessage);
             } catch (CtfdApiException | IOException e) {
                 log.error("Failure while update/email operation: {}", e.getMessage());
                 emitter.completeWithError(e);

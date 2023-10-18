@@ -55,6 +55,8 @@ public class CtfdApiServiceImpl implements CtfdApiService {
     @Value("#{ @environment['ctfd.api.backoff-seconds'] ?: 60 }")
     private Integer backoffSeconds;
 
+    @Value("#{ @environment['ctfd.api.notify-override'] ?: false }")
+    private Boolean notifyOverride;
 
     private final WebClient.Builder webClientBuilder;
     private WebClient webClient;
@@ -93,12 +95,14 @@ public class CtfdApiServiceImpl implements CtfdApiService {
         ctfdUser.setName(alias);
         ctfdUser.setPassword(UUID.randomUUID().toString());
         ctfdUser.setAffiliation(affiliation);
-        String uri = API_URI + "/users" + (req.getNotify()?"?notify=true":"");
+        String notify = (notifyOverride || req.getNotify()) ? "?notify=true" : "";
+        String uri = API_URI + "/users" + notify;
         ClientResponse res = this.webClient.post().uri(uri)
             .body(BodyInserters.fromValue(ctfdUser))
             .exchange()
             .block();
         if (res.statusCode().is2xxSuccessful()) {
+            log.debug("Created new user with alias: {}. Notify is: {}", alias, (notifyOverride || req.getNotify()));
             return res.bodyToMono(CtfdUserResponse.class).block();
         }
         CtfdApiErrorResponse error = res.bodyToMono(CtfdApiErrorResponse.class).block();

@@ -160,15 +160,18 @@ public class CtfdApiServiceImpl implements CtfdApiService {
                 page = ctfdUserResponse.getMeta().getPagination().getNext();
                 processed += ctfdUserResponse.getData().length;
             } catch (CtfdApiException | IOException e) {
+                log.error("Failure while update/email operation: {}", e.getMessage());
                 emitter.completeWithError(e);
+                return;
             }
         } while (page != null);
         try {
             emitter.send(new CtfdUpdateAndEmailResponse(processed));
+            emitter.complete();
         } catch (IOException e) {
+            log.error("Emitter send failed: {}", e.getMessage());
             emitter.completeWithError(e);
         }
-        emitter.complete();
     }
 
     // TODO - gross - heroku workaround

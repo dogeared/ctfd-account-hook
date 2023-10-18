@@ -1,8 +1,10 @@
 package dev.dogeared.ctfdaccounthook.unit;
 
-import dev.dogeared.ctfdaccounthook.model.CtfdCreateUserRequest;
 import dev.dogeared.ctfdaccounthook.Exception.CtfdApiException;
 import dev.dogeared.ctfdaccounthook.model.CtfdApiErrorResponse;
+import dev.dogeared.ctfdaccounthook.model.CtfdCreateUserRequest;
+import dev.dogeared.ctfdaccounthook.model.CtfdMeta;
+import dev.dogeared.ctfdaccounthook.model.CtfdUpdateAndEmailResponse;
 import dev.dogeared.ctfdaccounthook.model.CtfdUser;
 import dev.dogeared.ctfdaccounthook.model.CtfdUserPaginatedResponse;
 import dev.dogeared.ctfdaccounthook.model.CtfdUserResponse;
@@ -20,12 +22,18 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
+
 import static dev.dogeared.ctfdaccounthook.service.CtfdApiServiceImpl.API_URI;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -86,6 +94,9 @@ public class CtfdApiServiceTest {
         ReflectionTestUtils.setField(ctfdApiService, "ctfdUrl", CTFD_URL);
         ReflectionTestUtils.setField(ctfdApiService, "maxAttempts", 2);
         ReflectionTestUtils.setField(ctfdApiService, "backoffSeconds", 60);
+        ReflectionTestUtils.setField(ctfdApiService, "notifyOverride", false);
+
+        ctfdApiService = spy(ctfdApiService);
     }
 
     public void generalSetup() {
@@ -314,24 +325,46 @@ public class CtfdApiServiceTest {
         assertThat(actual).isEqualTo(expected);
     }
 
-//    @Test
-//    public void t() {
-//        generalSetup();
-//        exchangeSetup();
-//        setupGetUsers();
-//        when(reqHeaderUriSpec.uri(API_URI + USERS_ENDPOINT + "?page=1&affiliation=" + AFFILIATION))
-//            .thenReturn(reqHeaderSpec);
-//        HttpStatusCode httpStatusCode = HttpStatus.OK;
-//        when(clientResponse.statusCode()).thenReturn(httpStatusCode);
-//        // TODO - need to add or mock values here
-//        CtfdUserPaginatedResponse expected = new CtfdUserPaginatedResponse();
-//        Mono<CtfdUserPaginatedResponse> resMono = Mono.just(expected);
-//        when(clientResponse.bodyToMono(CtfdUserPaginatedResponse.class)).thenReturn(resMono);
-//
-//        SseEmitter mockSse = mock(SseEmitter.class);
-//
-//        ctfdApiService.updateAndEmail(mockSse, AFFILIATION);
-//
-//
-//    }
+    @Test
+    public void when_updateAndEmail_Emitter_Fail() throws Exception {
+        CtfdUserPaginatedResponse expected = new CtfdUserPaginatedResponse();
+        CtfdUser user = mock(CtfdUser.class);
+        when(user.getId()).thenReturn(1);
+        when(user.getName()).thenReturn("bob");
+        CtfdUser[] data = new CtfdUser[]{user};
+        expected.setData(data);
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        doReturn(expected).when(ctfdApiService).getUsersByAffiliation(AFFILIATION,1);
+
+        doThrow(IOException.class).when(emitter).send(any(SseEmitter.SseEventBuilder.class));
+        ctfdApiService.updateAndEmail(emitter, AFFILIATION);
+        verify(emitter, times(1)).completeWithError(any(IOException.class));
+    }
+    @Test
+    public void when_updateAndEmail_Emitter_Success() throws Exception {
+        CtfdUserPaginatedResponse expected = new CtfdUserPaginatedResponse();
+        CtfdUser user = mock(CtfdUser.class);
+        when(user.getId()).thenReturn(1);
+        when(user.getName()).thenReturn("bob");
+        CtfdUser[] data = new CtfdUser[]{user};
+        expected.setData(data);
+        CtfdMeta meta = mock(CtfdMeta.class);
+        CtfdMeta.CtfdPagination pagination = mock(CtfdMeta.CtfdPagination.class);
+        when(meta.getPagination()).thenReturn(pagination);
+        when(pagination.getNext()).thenReturn(null);
+        expected.setMeta(meta);
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        doReturn(expected).when(ctfdApiService).getUsersByAffiliation(AFFILIATION,1);
+        doReturn(user).when(ctfdApiService).updatePassword(user);
+        doReturn(mock(CtfdUserResponse.class)).when(ctfdApiService).emailUser(user);
+
+        ctfdApiService.updateAndEmail(emitter, AFFILIATION);
+
+        verify(emitter, times(2)).send(any(SseEmitter.SseEventBuilder.class));
+        verify(emitter, times(1)).send(any(CtfdUpdateAndEmailResponse.class));
+    }
 }

@@ -167,6 +167,21 @@ public class CtfdApiServiceImpl implements CtfdApiService {
         emitter.complete();
     }
 
+    // TODO - gross - heroku workaround
+    @Async
+    @Override
+    public void emitterHeartBeat(SseEmitter emitter) {
+        try {
+            do {
+                emitter.send("beat");
+                Thread.sleep(5000);
+            } while (true);
+        } catch (Exception e) {
+            log.debug("exception during emitter: {}", e.getMessage());
+        }
+    }
+
+
     @Override
     public CtfdUserResponse updateUser(CtfdUser ctfdUser) {
         if (ctfdUser == null || ctfdUser.getId() == null) {

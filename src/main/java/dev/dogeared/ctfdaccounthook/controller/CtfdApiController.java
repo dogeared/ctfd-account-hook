@@ -77,20 +77,8 @@ public class CtfdApiController {
     public SseEmitter updateAndEmailUsers(@PathVariable String affiliation, HttpServletResponse res) {
         // TODO - should probs be another env var setting
         SseEmitter emitter = new SseEmitter(1000*60*60*24L);
-        emitterHeartBeat(emitter);
+        ctfdApiService.emitterHeartBeat(emitter);
         ctfdApiService.updateAndEmail(emitter, affiliation);
         return emitter;
-    }
-
-    @Async
-    protected void emitterHeartBeat(SseEmitter emitter) {
-        try {
-            do {
-                emitter.send("beat");
-                Thread.sleep(5000);
-            } while (true);
-        } catch (Exception e) {
-            log.debug("exception during emitter: {}", e.getMessage());
-        }
     }
 }

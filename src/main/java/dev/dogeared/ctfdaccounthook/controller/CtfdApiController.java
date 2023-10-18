@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -76,7 +77,18 @@ public class CtfdApiController {
     public SseEmitter updateAndEmailUsers(@PathVariable String affiliation, HttpServletResponse res) {
         // TODO - should probs be another env var setting
         SseEmitter emitter = new SseEmitter(1000*60*60*24L);
+        emitterHeartBeat(emitter);
         ctfdApiService.updateAndEmail(emitter, affiliation);
         return emitter;
+    }
+
+    @Async
+    protected void emitterHeartBeat(SseEmitter emitter) {
+        try {
+            emitter.send("beat");
+            Thread.sleep(5000);
+        } catch (Exception e) {
+            log.debug("exception during emitter: {}", e.getMessage());
+        }
     }
 }

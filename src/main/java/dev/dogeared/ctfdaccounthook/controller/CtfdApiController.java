@@ -85,8 +85,10 @@ public class CtfdApiController {
     @Async
     protected void emitterHeartBeat(SseEmitter emitter) {
         try {
-            emitter.send("beat");
-            Thread.sleep(5000);
+            do {
+                emitter.send("beat");
+                Thread.sleep(5000);
+            } while (true);
         } catch (Exception e) {
             log.debug("exception during emitter: {}", e.getMessage());
         }

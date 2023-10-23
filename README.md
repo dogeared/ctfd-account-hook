@@ -130,6 +130,17 @@ This endpoint is used to send an email to all users that belong to the named `af
 For each user in the result set, a random UUID is set as the password and an email is sent via the CTFd API with the
 user's credentials.
 
+### POST /api/v1/email-creds/{name}
+
+This endpoint is used to notify an existing user of their credentials.
+
+NOTE: Part of the work of this endpoint is to change their password to a new, random password.
+
+If you don't know the user's `name` (alias), you can search by email address in the CTFd UI and then capture their 
+`name`.
+
+Currently, the CTFd API doesn't allow for search by email address, which is why this endpoint is oriented around `name`.
+
 ## Configuration
 
 The following environment variables are required to configure the service.

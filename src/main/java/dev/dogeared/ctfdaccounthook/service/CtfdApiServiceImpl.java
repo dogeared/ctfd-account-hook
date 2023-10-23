@@ -127,6 +127,27 @@ public class CtfdApiServiceImpl implements CtfdApiService {
         throw new CtfdApiException(error);
     }
 
+    @Override
+    public CtfdUser getUserByName(String name) {
+        String uri = API_URI + "/users?field=name&q=" + name;
+        ClientResponse res = this.webClient.get().uri(uri).exchange().block();
+        if (!res.statusCode().is2xxSuccessful()) {
+            CtfdApiErrorResponse error = new CtfdApiErrorResponse();
+            error.getErrors().setMessage(String.format("Unable to get user for name: %s", name));
+            throw new CtfdApiException(error);
+        }
+        CtfdUserPaginatedResponse ret = res.bodyToMono(CtfdUserPaginatedResponse.class).block();
+        if (ret.getMeta().getPagination().getTotal() != 1) {
+            CtfdApiErrorResponse error = new CtfdApiErrorResponse();
+            error.getErrors().setMessage(String.format(
+                "Wrong number of records found for name: %s. Should be exactly 1, not: %d",
+                name, ret.getMeta().getPagination().getTotal()
+            ));
+            throw new CtfdApiException(error);
+        }
+        return ret.getData()[0];
+    }
+
     @Async
     @Override
     @LogExecutionTime

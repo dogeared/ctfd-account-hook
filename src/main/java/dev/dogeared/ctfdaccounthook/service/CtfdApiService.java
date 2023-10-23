@@ -11,6 +11,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public interface CtfdApiService {
     CtfdUserResponse createUser(CtfdCreateUserRequest req, String alias) throws CtfdApiException;
     CtfdUserPaginatedResponse getUsersByAffiliation(String affiliation, Integer page);
+
+    CtfdUser getUserByName(String name);
+
     void updateAndEmail(SseEmitter emitter, String affiliation);
 
     @Async

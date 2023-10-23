@@ -368,4 +368,74 @@ public class CtfdApiServiceTest {
         verify(emitter, times(1)).send(any(String.class));
         verify(emitter, times(1)).send(any(CtfdUpdateAndEmailResponse.class));
     }
+
+    @Test
+    public void whenGetUserByName_webClient_Fail() {
+        generalSetup();
+        exchangeSetup();
+        setupGetUsers();
+        when(reqHeaderUriSpec.uri(API_URI + USERS_ENDPOINT+ "?field=name&q=bob")).thenReturn(reqHeaderSpec);
+
+        HttpStatusCode httpStatusCode = HttpStatus.BAD_REQUEST;
+        when(clientResponse.statusCode()).thenReturn(httpStatusCode);
+
+        try {
+            ctfdApiService.getUserByName("bob");
+            fail();
+        } catch (CtfdApiException e) {
+            assertThat(e.getCtfdApiError().getErrors().getMessage())
+                .isEqualTo("Unable to get user for name: bob");
+        }
+    }
+
+    @Test
+    public void whenGetUserByName_tooMany_Fail() {
+        generalSetup();
+        exchangeSetup();
+        setupGetUsers();
+        when(reqHeaderUriSpec.uri(API_URI + USERS_ENDPOINT+ "?field=name&q=bob")).thenReturn(reqHeaderSpec);
+
+        HttpStatusCode httpStatusCode = HttpStatus.OK;
+        when(clientResponse.statusCode()).thenReturn(httpStatusCode);
+
+        CtfdUserPaginatedResponse ctfdUserPaginatedResponse =  new CtfdUserPaginatedResponse();
+        ctfdUserPaginatedResponse.setMeta(new CtfdMeta());
+        ctfdUserPaginatedResponse.getMeta().setPagination(new CtfdMeta.CtfdPagination());
+        ctfdUserPaginatedResponse.getMeta().getPagination().setTotal(2);
+        Mono<CtfdUserPaginatedResponse> resMono = Mono.just(ctfdUserPaginatedResponse);
+        when(clientResponse.bodyToMono(CtfdUserPaginatedResponse.class)).thenReturn(resMono);
+
+        try {
+            ctfdApiService.getUserByName("bob");
+            fail();
+        } catch (CtfdApiException e) {
+            assertThat(e.getCtfdApiError().getErrors().getMessage())
+                .isEqualTo("Wrong number of records found for name: bob. Should be exactly 1, not: 2");
+        }
+    }
+
+    @Test
+    public void whenGetUserByName_Success() {
+        generalSetup();
+        exchangeSetup();
+        setupGetUsers();
+        when(reqHeaderUriSpec.uri(API_URI + USERS_ENDPOINT+ "?field=name&q=bob")).thenReturn(reqHeaderSpec);
+
+        HttpStatusCode httpStatusCode = HttpStatus.OK;
+        when(clientResponse.statusCode()).thenReturn(httpStatusCode);
+
+        CtfdUserPaginatedResponse ctfdUserPaginatedResponse =  new CtfdUserPaginatedResponse();
+        CtfdUser expected = new CtfdUser();
+        expected.setName("bob");
+        ctfdUserPaginatedResponse.setData(new CtfdUser[]{expected});
+        ctfdUserPaginatedResponse.setMeta(new CtfdMeta());
+        ctfdUserPaginatedResponse.getMeta().setPagination(new CtfdMeta.CtfdPagination());
+        ctfdUserPaginatedResponse.getMeta().getPagination().setTotal(1);
+        Mono<CtfdUserPaginatedResponse> resMono = Mono.just(ctfdUserPaginatedResponse);
+        when(clientResponse.bodyToMono(CtfdUserPaginatedResponse.class)).thenReturn(resMono);
+
+        CtfdUser actual = ctfdApiService.getUserByName("bob");
+
+        assertThat(actual.getName()).isEqualTo(expected.getName());
+    }
 }

@@ -7,6 +7,7 @@ import dev.dogeared.ctfdaccounthook.controller.CtfdApiController;
 import dev.dogeared.ctfdaccounthook.model.CtfdApiErrorResponse;
 import dev.dogeared.ctfdaccounthook.model.CtfdCreateUserRequest;
 import dev.dogeared.ctfdaccounthook.model.CtfdMeta;
+import dev.dogeared.ctfdaccounthook.model.CtfdResponse;
 import dev.dogeared.ctfdaccounthook.model.CtfdUpdateAndEmailResponse;
 import dev.dogeared.ctfdaccounthook.model.CtfdUser;
 import dev.dogeared.ctfdaccounthook.model.CtfdUserPaginatedResponse;
@@ -35,6 +36,7 @@ import static dev.dogeared.ctfdaccounthook.integration.CtfdApiControllerTest.HEA
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
@@ -72,6 +74,7 @@ public class CtfdApiControllerTest {
 
     public static final String AFFILIATION = "fetch";
     private static final String CTFD_USERS_ENDPOINT = "/api/v1/users";
+    private static final String CTFD_EMAIL_CREDS_ENDPOINT = "/api/v1/email-creds/bob";
     private static final String CTFD_EMAIL_ENDPOINT = "/api/v1/update-and-email/" + AFFILIATION;
     private static final String SUCCESS = "success";
     public static final String HEADER = "X-TEST-HEADER";
@@ -305,7 +308,56 @@ public class CtfdApiControllerTest {
     }
 
     @Test
-    public void whenUpdateAndEmailUsers_Success() throws Exception {
+    public void whenEmailCreds_thenSuccess() throws Exception {
+        CtfdUserResponse expected = new CtfdUserResponse();
+        expected.setSuccess(SUCCESS);
+
+        CtfdUser user = mock(CtfdUser.class);
+        when(ctfdApiService.getUserByName("bob")).thenReturn(user);
+        when(ctfdApiService.updatePassword(user)).thenReturn(user);
+        when(ctfdApiService.emailUser(user)).thenReturn(expected);
+
+        MockHttpServletResponse response = mvc.perform(
+            post(CTFD_EMAIL_CREDS_ENDPOINT)
+                .header(HEADER, TOKEN_VALUE)
+                .contentType(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(status().isOk()).andReturn().getResponse();
+
+        CtfdUserPaginatedResponse actual =
+                mapper.readValue(response.getContentAsString(), CtfdUserPaginatedResponse.class);
+        assertThat(actual.getSuccess()).isEqualTo(expected.getSuccess());
+    }
+
+    @Test
+    public void whenEmailCreds_thenFail() throws Exception {
+        String errorString = String.format("""
+        {
+            "errors": {
+                "message": "Blargity Blarg Blarg"
+            }
+        }
+        """, AFFILIATION);
+
+        CtfdApiErrorResponse expected = mapper.readValue(errorString, CtfdApiErrorResponse.class);
+        CtfdApiException exception = new CtfdApiException(expected);
+
+        when(ctfdApiService.getUserByName("bob")).thenThrow(exception);
+
+        MockHttpServletResponse response = mvc.perform(
+            post(CTFD_EMAIL_CREDS_ENDPOINT)
+                .header(HEADER, TOKEN_VALUE)
+                .contentType(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(status().isBadRequest()).andReturn().getResponse();
+
+        CtfdApiErrorResponse actual =
+                mapper.readValue(response.getContentAsString(), CtfdApiErrorResponse.class);
+        assertThat(actual.getErrors().getMessage()).isEqualTo(expected.getErrors().getMessage());
+    }
+
+        @Test
+    public void whenUpdateAndEmailUsers_thenSuccess() throws Exception {
         MockHttpServletResponse response = mvc.perform(
             post(CTFD_EMAIL_ENDPOINT)
                 .header(HEADER, TOKEN_VALUE)

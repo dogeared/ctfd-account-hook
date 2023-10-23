@@ -4,6 +4,8 @@ import dev.dogeared.ctfdaccounthook.Exception.CtfdApiException;
 import dev.dogeared.ctfdaccounthook.model.CtfdApiErrorResponse;
 import dev.dogeared.ctfdaccounthook.model.CtfdCreateUserRequest;
 import dev.dogeared.ctfdaccounthook.model.CtfdResponse;
+import dev.dogeared.ctfdaccounthook.model.CtfdUser;
+import dev.dogeared.ctfdaccounthook.model.CtfdUserPaginatedResponse;
 import dev.dogeared.ctfdaccounthook.service.AliasService;
 import dev.dogeared.ctfdaccounthook.service.CtfdApiService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -80,5 +82,17 @@ public class CtfdApiController {
         ctfdApiService.emitterHeartBeat(emitter);
         ctfdApiService.updateAndEmail(emitter, affiliation);
         return emitter;
+    }
+
+    @PostMapping("/api/v1/email-creds/{name}")
+    public CtfdResponse emailCreds(@PathVariable String name, HttpServletResponse res) {
+        try {
+            CtfdUser user = ctfdApiService.getUserByName(name);
+            user = ctfdApiService.updatePassword(user);
+            return ctfdApiService.emailUser(user);
+        } catch (CtfdApiException e) {
+            res.setStatus(HttpStatus.BAD_REQUEST.value());
+            return e.getCtfdApiError();
+        }
     }
 }

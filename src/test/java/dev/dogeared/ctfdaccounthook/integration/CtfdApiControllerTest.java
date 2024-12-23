@@ -192,7 +192,7 @@ public class CtfdApiControllerTest {
         String errorString = """
         {"errors": {
             "name": [
-                "Attempted to find a unique alias 2 times and failed."
+                "createUser: Attempted to find a unique alias 2 times for email: blarg@example.com and failed."
             ]
         }}
         """;

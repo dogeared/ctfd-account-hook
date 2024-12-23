@@ -50,6 +50,7 @@ public class CtfdApiController {
                 // check to see if the issue is NAME or EMAIL related
                 // if name, try again
                 if (e.getCtfdApiError().getErrors().getEmail() != null) {
+                    log.debug("createUser: email already used: {}", req.getEmail());
                     res.setStatus(HttpStatus.BAD_REQUEST.value());
                     return e.getCtfdApiError();
                 }

@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.text.MessageFormat;
+
 @RestController
 public class CtfdApiController {
 
@@ -56,11 +58,11 @@ public class CtfdApiController {
                 }
             }
         } while (retryNum++ < aliasRetries);
+        String msg = MessageFormat.format("createUser: Attempted to find a unique alias {0} times for email: {1} and failed.", aliasRetries+1, req.getEmail());
+        log.debug(msg);
         res.setStatus(HttpStatus.BAD_REQUEST.value());
         CtfdApiErrorResponse ctfdApiErrorResponse = new CtfdApiErrorResponse();
-        ctfdApiErrorResponse.getErrors().setName(
-            new String[]{"Attempted to find a unique alias " + (aliasRetries+1) + " times and failed."}
-        );
+        ctfdApiErrorResponse.getErrors().setName(new String[]{msg});
         return ctfdApiErrorResponse;
     }
 

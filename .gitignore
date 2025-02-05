@@ -32,4 +32,8 @@ build/
 ### VS Code ###
 .vscode/
 
-src/main/resources/application.yml
+application.yml
+
+node_modules
+*.csv
+.dccache

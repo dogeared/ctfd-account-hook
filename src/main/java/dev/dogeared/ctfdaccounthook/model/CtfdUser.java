@@ -15,7 +15,7 @@ public class CtfdUser {
     private String country;
     private String created;
     private String email;
-    private String[] fields = new String[0];
+    private Object[] fields = new Object[0];
     private Boolean hidden = false;
     private String language;
     private String name;
@@ -85,11 +85,11 @@ public class CtfdUser {
         this.email = email;
     }
 
-    public String[] getFields() {
+    public Object[] getFields() {
         return fields;
     }
 
-    public void setFields(String[] fields) {
+    public void setFields(Object[] fields) {
         this.fields = fields;
     }
 

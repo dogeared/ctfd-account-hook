@@ -1,7 +1,8 @@
 import * as cheerio from 'cheerio';
 
-let session = '141f0ae9-d359-4e99-86a6-5ee98ca77125.wrhC5GSsYEejcXFp4A63MTWjqOA';
-let usersUrl = 'https://snyk.ctf.games/admin/users';
+let session = process.argv[2];
+let usersUrl = process.argv[3];
+
 
 let fetchPage = async (page) => {
     let res = await fetch(`${usersUrl}?page=${page}`, {
@@ -9,7 +10,8 @@ let fetchPage = async (page) => {
             'Cookie': `session=${session}`
         }
     });
-    return await res.text();
+    let text = await res.text();
+    return text;
 }
 
 (async () => {

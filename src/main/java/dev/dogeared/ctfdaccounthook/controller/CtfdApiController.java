@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.text.MessageFormat;
+import java.util.Optional;
 
 @RestController
 public class CtfdApiController {
@@ -80,11 +81,15 @@ public class CtfdApiController {
     }
 
     @PostMapping("/api/v1/update-and-email/{affiliation}")
-    public SseEmitter updateAndEmailUsers(@PathVariable String affiliation, HttpServletResponse res) {
+    public SseEmitter updateAndEmailUsers(
+        @PathVariable String affiliation,
+        @RequestParam(required = false) Optional<String> newAffiliation,
+        HttpServletResponse res
+    ) {
         // TODO - should probs be another env var setting
         SseEmitter emitter = new SseEmitter(1000*60*60*24L);
         ctfdApiService.emitterHeartBeat(emitter);
-        ctfdApiService.updateAndEmail(emitter, affiliation);
+        ctfdApiService.updateAndEmail(emitter, affiliation, newAffiliation);
         return emitter;
     }
 

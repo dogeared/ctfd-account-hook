@@ -23,6 +23,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import static dev.dogeared.ctfdaccounthook.service.CtfdApiServiceImpl.API_URI;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -326,6 +327,27 @@ public class CtfdApiServiceTest {
     }
 
     @Test
+    public void when_updateAffiliation_Success() {
+        generalSetup();
+        exchangeSetup();
+        setupPatchUser();
+        HttpStatusCode httpStatusCode = HttpStatus.OK;
+        when(clientResponse.statusCode()).thenReturn(httpStatusCode);
+        CtfdUserResponse expected = new CtfdUserResponse();
+        Mono<CtfdUserResponse> resMono = Mono.just(expected);
+        when(clientResponse.bodyToMono(CtfdUserResponse.class)).thenReturn(resMono);
+
+        CtfdUser ctfdUser = new CtfdUser();
+        ctfdUser.setId(1);
+        ctfdUser.setName("name");
+        ctfdUser.setPassword("password");
+        ctfdUser.setAffiliation("oldAffiliation");
+
+        CtfdUser actual = ctfdApiService.updateAffiliation(ctfdUser, Optional.of("newAffiliation"));
+        assertThat(actual.getAffiliation()).isEqualTo("newAffiliation");
+    }
+
+    @Test
     public void when_updateAndEmail_Emitter_Fail() throws Exception {
         CtfdUserPaginatedResponse expected = new CtfdUserPaginatedResponse();
         CtfdUser user = mock(CtfdUser.class);
@@ -342,6 +364,7 @@ public class CtfdApiServiceTest {
         ctfdApiService.updateAndEmail(emitter, AFFILIATION);
         verify(emitter, times(1)).completeWithError(any(IOException.class));
     }
+
     @Test
     public void when_updateAndEmail_Emitter_Success() throws Exception {
         CtfdUserPaginatedResponse expected = new CtfdUserPaginatedResponse();

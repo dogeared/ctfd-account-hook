@@ -283,10 +283,9 @@ public class CtfdApiServiceImpl implements CtfdApiService {
             String oldAffiliation = ctfdUser.getAffiliation();
             ctfdUser.setAffiliation(newAffiliation.get());
             CtfdUserResponse res = updateUser(ctfdUser);
-            ctfdUser = res.getUser();
             log.debug(
                 "Affiliation updated for user id: {} from: {} to: {}",
-                ctfdUser.getId(), oldAffiliation, newAffiliation
+                ctfdUser.getId(), oldAffiliation, newAffiliation.get()
             );
         }
         return ctfdUser;

@@ -26,6 +26,7 @@ import reactor.util.retry.RetryBackoffSpec;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -152,6 +153,13 @@ public class CtfdApiServiceImpl implements CtfdApiService {
     @Override
     @LogExecutionTime
     public void updateAndEmail(SseEmitter emitter, String affiliation) {
+        updateAndEmail(emitter, affiliation, Optional.empty());
+    }
+
+    @Async
+    @Override
+    @LogExecutionTime
+    public void updateAndEmail(SseEmitter emitter, String affiliation, Optional<String> newAffiliation) {
         Integer page = 1;
         int processed = 0;
 
@@ -168,9 +176,9 @@ public class CtfdApiServiceImpl implements CtfdApiService {
 
                     log.debug("Processing user id: {}, name: {}", ctfdUser.getId(), ctfdUser.getName());
                     ctfdUser = updatePassword(ctfdUser);
-                    log.debug("Password updated for user id: {}", ctfdUser.getId());
+                    ctfdUser = updateAffiliation(ctfdUser, newAffiliation);
                     emailUser(ctfdUser);
-                    log.debug("Email sent for user id: {}", ctfdUser.getId());
+
 
                     event = SseEmitter.event()
                         .data("Finished Processing - " + ctfdUser.getId() + " - " + LocalTime.now().toString())
@@ -240,6 +248,7 @@ public class CtfdApiServiceImpl implements CtfdApiService {
         String newPassword = UUID.randomUUID().toString();
         ctfdUser.setPassword(newPassword);
         updateUser(ctfdUser);
+        log.debug("Password updated for user id: {}", ctfdUser.getId());
         return ctfdUser;
     }
 
@@ -251,7 +260,7 @@ public class CtfdApiServiceImpl implements CtfdApiService {
             .replace("{name}", ctfdUser.getName())
             .replace("{password}", ctfdUser.getPassword());
         String uri = API_URI + "/users/" + ctfdUser.getId() + "/email";
-        return this.webClient.post().uri(uri)
+        CtfdUserResponse ret =  this.webClient.post().uri(uri)
             .bodyValue(emailText)
             .retrieve()
             .onStatus(
@@ -264,6 +273,22 @@ public class CtfdApiServiceImpl implements CtfdApiService {
             .bodyToMono(CtfdUserResponse.class)
             .retryWhen(retryBackoffSpec)
             .block();
+        log.debug("Email sent for user id: {}", ctfdUser.getId());
+        return ret;
+    }
+
+    @Override
+    public CtfdUser updateAffiliation(CtfdUser ctfdUser, Optional<String> newAffiliation) {
+        if (newAffiliation.isPresent()) {
+            String oldAffiliation = ctfdUser.getAffiliation();
+            ctfdUser.setAffiliation(newAffiliation.get());
+            CtfdUserResponse res = updateUser(ctfdUser);
+            log.debug(
+                "Affiliation updated for user id: {} from: {} to: {}",
+                ctfdUser.getId(), oldAffiliation, newAffiliation.get()
+            );
+        }
+        return ctfdUser;
     }
 
     public RetryBackoffSpec getRetryBackoffSpec() {
